@@ -40,15 +40,15 @@
   $: console.log('data element:', section, dataElements);
 </script>
 
-{#if !!visibleDataElements && visibleDataElements.length > 0}
+{#if !!dataElements && dataElements.length > 0}
   <div
     class="w-full {!!height ? '' : 'h-full'} flex flex-col"
     style={!!height ? `height: ${height};` : ''}
   >
     <div
-      class="px-4 py-2 font-bold shrink-0 text-slate-700 flex items-center gap-2 justify-between"
+      class="py-2 font-bold shrink-0 text-slate-700 flex items-center gap-2 justify-between"
     >
-      <div class="flex-auto shrink-0">{section}</div>
+      <div class="flex-auto shrink-0 py-1">{section}</div>
       {#if filterable}
         <input
           type="text"
@@ -59,17 +59,19 @@
       {/if}
     </div>
     <div class="flex-auto h-0 overflow-y-auto">
-      {#each visibleDataElements as element, i (element.name ?? i)}
-        {#if element.children}
-          <DataElementGroup
-            name={element.name}
-            dataElements={element.children}
-            {filterText}
-          />
-        {:else}
-          <DataElementView {element} />
-        {/if}
-      {/each}
+      {#if !!visibleDataElements}
+        {#each visibleDataElements as element, i (element.name ?? i)}
+          {#if element.children}
+            <DataElementGroup
+              name={element.name}
+              dataElements={element.children}
+              {filterText}
+            />
+          {:else}
+            <DataElementView {element} />
+          {/if}
+        {/each}
+      {/if}
     </div>
   </div>
 {/if}

@@ -15,15 +15,19 @@ FRONTEND_BUILD_DIR = os.path.join(os.path.dirname(__file__), "client", "dist")
 
 BUCKET_NAME = "sepsis-challenging-cases"
 BUCKET_DIRECTORIES = [
-    "states"
+    "states",
+    "rst_pressor",
+    "rst_uo",
+    "explanations"
 ]
 
 # Initialize GCS client
 storage_client = storage.Client()
 
-# get metadata
+metadata = {}
+
 with storage_client.bucket(BUCKET_NAME).blob('meta.json').open('r') as f:
-    metadata = json.load(f)
+    datasets = json.load(f)['datasets']
 
 app = Flask(__name__, template_folder=FRONTEND_BUILD_DIR)
 csrf = CSRFProtect(app)
@@ -80,12 +84,16 @@ def home(path):
 def load_user(user_id):
     return User.get(user_id)
 
-@app.route('/patient/<id>', methods=['GET'])
-def get_patient_files(id):
+@app.route('/dataset', methods=['GET'])
+def get_datasets():
+    return jsonify(datasets)
+
+@app.route('/dataset/<dataset_name>/patient/<id>', methods=['GET'])
+def get_patient_files(dataset_name, id):
     result = {'data': {}}
     for directory in BUCKET_DIRECTORIES:
         # Construct the GCS file path
-        file_name = f"{directory}/{id}.json.gz"
+        file_name = f"{dataset_name}/{directory}/{id}.json.gz"
         
         try:
             # Get the bucket and blob
@@ -114,10 +122,16 @@ def get_patient_files(id):
             return str(e), 400
     return jsonify(result)
 
-@app.route('/patient/random', methods=['GET'])
-def random_patient():
-    random_id = random.choice(metadata['patient_ids'])
-    return redirect(f"/patient/{random_id}")
+@app.route('/dataset/<dataset_name>/patient/random', methods=['GET'])
+def random_patient(dataset_name):
+    global metadata
+    if dataset_name not in metadata:
+        # get metadata
+        with storage_client.bucket(BUCKET_NAME).blob(f'{dataset_name}/meta.json').open('r') as f:
+            metadata[dataset_name] = json.load(f)
+
+    random_id = random.choice(metadata[dataset_name]['patient_ids'])
+    return redirect(f"/dataset/{dataset_name}/patient/{random_id}")
 
 if __name__ == "__main__":
     app.run(debug=True, port=4999)

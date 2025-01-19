@@ -3,6 +3,11 @@
   import { writable, type Writable } from 'svelte/store';
   import type { PatientData } from './lib/patientdata';
   import DataElementPane from './lib/DataElementPane.svelte';
+  import PressorPredictionPane from './lib/rst/PressorPredictionPane.svelte';
+  import FluidBalancePredictionPane from './lib/rst/FluidBalancePredictionPane.svelte';
+
+  let datasets: string[] = [];
+  let currentDataset: string | null = null;
 
   let visiblePatientID: string | null = null;
   let patientData: Writable<PatientData> = writable({});
@@ -28,13 +33,17 @@
   }
 
   async function randomPatient() {
-    let randomPatientData = await (await fetch('/patient/random')).json();
+    let randomPatientData = await (
+      await fetch(`/dataset/${currentDataset}/patient/random`)
+    ).json();
     setPatientData(randomPatientData);
   }
 
   async function searchPatient() {
     try {
-      let result = await (await fetch(`/patient/${editedPatientID}`)).json();
+      let result = await (
+        await fetch(`/dataset/${currentDataset}/patient/${editedPatientID}`)
+      ).json();
       setPatientData(result);
     } catch (e) {
       alert('No patient found with that ID.');
@@ -42,14 +51,23 @@
     }
   }
 
-  onMount(randomPatient);
+  onMount(async () => {
+    datasets = await (await fetch('/dataset')).json();
+    currentDataset = datasets[0];
+  });
+
+  let oldDataset: string | null = null;
+  $: if (currentDataset != oldDataset) {
+    oldDataset = currentDataset;
+    randomPatient();
+  }
 </script>
 
 <main class="w-screen h-screen flex flex-col">
   <div
     class="w-full h-12 grow-0 shrink-0 bg-slate-700 flex py-2 px-4 items-center gap-2"
   >
-    <div class="text-white font-bold">Sepsis RST Pane</div>
+    <div class="text-white font-bold">Sepsis Reasoning Support Tools</div>
     <div class="flex-auto" />
 
     <div class="text-white text-sm">
@@ -89,9 +107,14 @@
         >
       {/if}
     </form>
+    <select class="flat-select-dark" bind:value={currentDataset}>
+      {#each datasets as dataset}
+        <option value={dataset}>{dataset}</option>
+      {/each}
+    </select>
   </div>
-  <div class="flex-auto w-full flex h-0 p-4 gap-4">
-    <div class="flex flex-col w-1/4 gap-4">
+  <div class="flex-auto w-full flex h-0">
+    <div class="flex flex-col w-1/4 px-4 gap-4">
       <div class="flex-auto h-0 w-full overflow-hidden">
         <DataElementPane section="Demographics" />
       </div>
@@ -99,8 +122,16 @@
         <DataElementPane height="50vh" section="Notes" />
       </div>
     </div>
-    <div class="h-full w-1/4 overflow-hidden">
+    <div class="h-full w-1/4 pr-4 overflow-hidden">
       <DataElementPane section="State" filterable />
+    </div>
+    <div class="border-l border-slate-400 p-4 h-full w-1/2 overflow-y-auto">
+      <div class="mb-4">
+        <PressorPredictionPane />
+      </div>
+      <div class="mb-4">
+        <FluidBalancePredictionPane />
+      </div>
     </div>
   </div>
 </main>

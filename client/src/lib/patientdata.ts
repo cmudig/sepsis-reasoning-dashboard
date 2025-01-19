@@ -10,10 +10,10 @@ export type PatientDataElement = {
 };
 export type PatientData = {
   [key: string]: {
-    data?: PatientDataElement[];
+    data?: any[];
     timesteps?: {
       time: number;
-      data: PatientDataElement[];
+      data: any;
     }[];
   };
 };

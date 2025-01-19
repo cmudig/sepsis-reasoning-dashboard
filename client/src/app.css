@@ -146,12 +146,12 @@ select {
 
 select.flat-select-dark {
   background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg aria-hidden='true' xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 10 6'%3E%3Cpath stroke='%23FFFFFF' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m1 1 4 4 4-4'/%3E%3C/svg%3E");
-  @apply bg-slate-600 text-white text-sm rounded p-1.5 pl-2 border-0;
+  @apply bg-slate-600 text-white text-sm rounded-sm p-1.5 pl-2 border-0;
   padding-right: 2.5rem;
 }
 
 select.flat-select-sm {
-  @apply rounded text-xs p-1;
+  @apply rounded-sm text-xs p-1;
 }
 
 select.flat-select:disabled,
@@ -252,4 +252,8 @@ input[type='search'].flat-text-input {
 .tempo-placeholder-token {
   @apply rounded bg-blue-200/60 border border-blue-400 border-opacity-50;
   padding: 0 calc(1ch - 1px);
+}
+
+.measure {
+  max-width: 44em;
 }
