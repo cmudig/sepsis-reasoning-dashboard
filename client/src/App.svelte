@@ -5,6 +5,7 @@
   import DataElementPane from './lib/DataElementPane.svelte';
   import PressorPredictionPane from './lib/rst/PressorPredictionPane.svelte';
   import FluidBalancePredictionPane from './lib/rst/FluidBalancePredictionPane.svelte';
+  import TreatmentPredictionPane from './lib/rst/TreatmentPredictionPane.svelte';
 
   let datasets: string[] = [];
   let currentDataset: string | null = null;
@@ -131,6 +132,9 @@
       </div>
       <div class="mb-4">
         <FluidBalancePredictionPane />
+      </div>
+      <div class="mb-4">
+        <TreatmentPredictionPane />
       </div>
     </div>
   </div>
