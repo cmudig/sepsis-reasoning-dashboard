@@ -6,6 +6,8 @@
   import PressorPredictionPane from './lib/rst/PressorPredictionPane.svelte';
   import FluidBalancePredictionPane from './lib/rst/FluidBalancePredictionPane.svelte';
   import TreatmentPredictionPane from './lib/rst/TreatmentPredictionPane.svelte';
+  import TreatmentOutcomePredictionPane from './lib/rst/TreatmentOutcomePredictionPane.svelte';
+  import AiClinicianPane from './lib/rst/AIClinicianPane.svelte';
 
   let datasets: string[] = [];
   let currentDataset: string | null = null;
@@ -135,6 +137,12 @@
       </div>
       <div class="mb-4">
         <TreatmentPredictionPane />
+      </div>
+      <div class="mb-4">
+        <TreatmentOutcomePredictionPane />
+      </div>
+      <div class="mb-4">
+        <AiClinicianPane />
       </div>
     </div>
   </div>

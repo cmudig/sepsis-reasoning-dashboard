@@ -20,8 +20,6 @@
     d3.schemeOranges[3],
   ];
 
-  $: console.log(colorSchemes[2]);
-
   type TreatmentPrediction = {
     prediction: {
       tx: string;

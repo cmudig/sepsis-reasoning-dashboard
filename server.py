@@ -19,6 +19,7 @@ BUCKET_DIRECTORIES = [
     "rst_pressor",
     "rst_uo",
     "rst_tx_pred",
+    "rst_tx_outcome_pred",
     "explanations"
 ]
 
