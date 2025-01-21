@@ -8,6 +8,11 @@
   import TreatmentPredictionPane from './lib/rst/TreatmentPredictionPane.svelte';
   import TreatmentOutcomePredictionPane from './lib/rst/TreatmentOutcomePredictionPane.svelte';
   import AiClinicianPane from './lib/rst/AIClinicianPane.svelte';
+  import {
+    faChevronDown,
+    faChevronUp,
+  } from '@fortawesome/free-solid-svg-icons';
+  import Fa from 'svelte-fa';
 
   let datasets: string[] = [];
   let currentDataset: string | null = null;
@@ -23,6 +28,8 @@
 
   let editedPatientID: string | null = null;
   $: editedPatientID = visiblePatientID;
+
+  let allCollapsed: boolean = true;
 
   function setPatientData(data: {
     id: string;
@@ -129,20 +136,31 @@
       <DataElementPane section="State" filterable />
     </div>
     <div class="border-l border-slate-400 p-4 h-full w-1/2 overflow-y-auto">
-      <div class="mb-4">
-        <PressorPredictionPane />
+      <div class="px-4 pb-2 flex items-center justify-end">
+        <button
+          class="hover:opacity-50 text-blue-700 shrink-0 text-sm"
+          on:click={() => (allCollapsed = !allCollapsed)}
+        >
+          {allCollapsed ? 'Expand All' : 'Collapse All'}<Fa
+            class="inline ml-2"
+            icon={allCollapsed ? faChevronDown : faChevronUp}
+          />
+        </button>
       </div>
       <div class="mb-4">
-        <FluidBalancePredictionPane />
+        <PressorPredictionPane collapsed={allCollapsed} />
       </div>
       <div class="mb-4">
-        <TreatmentPredictionPane />
+        <FluidBalancePredictionPane collapsed={allCollapsed} />
       </div>
       <div class="mb-4">
-        <TreatmentOutcomePredictionPane />
+        <TreatmentPredictionPane collapsed={allCollapsed} />
       </div>
       <div class="mb-4">
-        <AiClinicianPane />
+        <TreatmentOutcomePredictionPane collapsed={allCollapsed} />
+      </div>
+      <div class="mb-4">
+        <AiClinicianPane collapsed={allCollapsed} />
       </div>
     </div>
   </div>
