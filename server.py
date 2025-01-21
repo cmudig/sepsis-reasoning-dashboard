@@ -1,6 +1,6 @@
 from flask import Flask, render_template, send_from_directory, request, redirect, jsonify
 from blueprints.user import User
-from flask_login import LoginManager, login_user, logout_user, login_required
+from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_wtf.csrf import CSRFProtect
 from google.cloud import storage
 import os
@@ -80,6 +80,8 @@ def home(path):
     if path in ("global.css", "favicon.png") or path.startswith("assets/"):
         # These files are only in public
         return send_from_directory("client/dist", path)
+    if not current_user.is_authenticated:
+        return redirect("/login")
     return send_from_directory(FRONTEND_BUILD_DIR, path)
 
 @login_manager.user_loader
@@ -88,10 +90,12 @@ def load_user(user_id):
 
 @app.route('/dataset', methods=['GET'])
 def get_datasets():
+    if not current_user.is_authenticated: return "Not authenticated", 403
     return jsonify(datasets)
 
 @app.route('/dataset/<dataset_name>/patient/<id>', methods=['GET'])
 def get_patient_files(dataset_name, id):
+    if not current_user.is_authenticated: return "Not authenticated", 403
     result = {'data': {}}
     for directory in BUCKET_DIRECTORIES:
         # Construct the GCS file path
@@ -126,6 +130,7 @@ def get_patient_files(dataset_name, id):
 
 @app.route('/dataset/<dataset_name>/patient/random', methods=['GET'])
 def random_patient(dataset_name):
+    if not current_user.is_authenticated: return "Not authenticated", 403
     global metadata
     if dataset_name not in metadata:
         # get metadata

@@ -122,6 +122,9 @@
         <option value={dataset}>{dataset}</option>
       {/each}
     </select>
+    <a class="px-2 font-bold text-white hover:opacity-50" href="/logout"
+      >Logout</a
+    >
   </div>
   <div class="flex-auto w-full flex h-0">
     <div class="flex flex-col w-1/4 px-4 gap-4">
