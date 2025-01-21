@@ -78,8 +78,10 @@
               (a, b, idx) =>
                 a +
                 (b.pred.consistent &&
-                b.pred.probs.reduce((x, y) => (!x || y.prob > x ? y : x), null)
-                  .policy == prediction.ground_truth[idx].label
+                b.pred.probs.reduce(
+                  (x, y) => (!x || y.prob > x.prob ? y : x),
+                  null
+                ).policy == prediction.ground_truth[idx].label
                   ? 1
                   : 0),
               0

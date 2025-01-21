@@ -18,8 +18,8 @@ service: rst-viewer
 
 handlers:
   - url: /(.*\.(?:css|js|js\.map|png))$
-    static_files: client/public/\1
-    upload: client/public/.*\.(?:css|js|js\.map|png)$
+    static_files: client/dist/\1
+    upload: client/dist/.*\.(?:css|js|js\.map|png)$
 
   - url: /.*
     secure: always
