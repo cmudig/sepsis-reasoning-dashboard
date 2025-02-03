@@ -28,7 +28,7 @@
     visibleDataElements = dataElements;
   }
 
-  let collapsed = false;
+  export let collapsed = false;
 </script>
 
 {#if visibleDataElements.length > 0}
@@ -42,8 +42,8 @@
       class="hover:opacity-50 text-sm font-bold text-slate-700 py-2 px-2 text-left w-full"
     >
       <Fa
-        class="inline mr-2"
-        icon={collapsed ? faChevronRight : faChevronDown}
+        class="inline mr-2 {!collapsed ? 'rotate-90' : ''}"
+        icon={faChevronRight}
       />{name}
     </button>
     {#if !collapsed}
@@ -54,6 +54,7 @@
             dataElements={element.children}
             indent={indent + 1}
             {filterText}
+            collapsed={!(element.expanded ?? false)}
           />
         {:else}
           <DataElementView {element} />

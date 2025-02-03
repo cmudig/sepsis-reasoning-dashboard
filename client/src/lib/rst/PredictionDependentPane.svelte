@@ -10,8 +10,12 @@
     faChevronUp,
   } from '@fortawesome/free-solid-svg-icons';
   import * as d3 from 'd3';
-  import ExplanationView from './ExplanationView.svelte';
   import CategoryBar from '../charts/CategoryBar.svelte';
+  import Tooltip from '../utils/Tooltip.svelte';
+
+  export let shortName: string = '';
+  export let longName: string = '';
+  export let outcomeDescription: string = '';
 
   export let showGroundTruth: boolean = true;
   export let showSummary: boolean = true;
@@ -27,22 +31,18 @@
   ];
 
   type OutcomePrediction = {
-    policy?: { tx: string; value: number }[];
+    policy?: { tx: string; value: string }[];
     sample_size: number;
-    predictions: {
-      target: string;
+    prediction: {
       mean: number;
       std: number;
       pvalue?: number;
-    }[];
+    };
   };
   type TreatmentOutcomePrediction = {
     average: OutcomePrediction;
     predictions: OutcomePrediction[];
-    ground_truth?: {
-      target: string;
-      label: string;
-    }[];
+    ground_truth?: string;
     severity_range: {
       min: number;
       max: number;
@@ -50,9 +50,13 @@
   };
 
   const TreatmentPolicyNames: { [key: string]: string[] } = {
-    'IV Fluids': ['Conservative', 'Moderate', 'Aggressive'],
-    Vasopressors: ['None', 'Low-Dose', 'High-Dose'],
-    Diuretics: ['No', 'Yes'],
+    Volume: [
+      '< 100 mL Fluids',
+      '100 mL - 1 L Fluids',
+      '> 1 L Fluids',
+      'Diuretics',
+    ],
+    Vasopressors: ['None', 'One', 'Multiple'],
   };
 
   let patientData: Writable<PatientData> = getContext('patientData');
@@ -61,12 +65,17 @@
   // let visibleTarget: string = 'Mortality';
 
   let prediction: TreatmentOutcomePrediction | undefined;
-  let selectedPolicy: number[] = [0, 0, 0];
+  let selectedPolicy: string[] = ['< 100 mL Fluids', 'None'];
   let policyPrediction: OutcomePrediction | null = null;
-  $: if (!!$patientData && !!$patientData['Treatment Outcome Prediction']) {
+  $: if (
+    !!$patientData &&
+    !!shortName &&
+    !!$patientData[`predictive_${shortName}_dependent`]
+  ) {
     prediction =
-      $patientData['Treatment Outcome Prediction'].timesteps![$timestepIndex]
-        .data;
+      $patientData[`predictive_${shortName}_dependent`].timesteps![
+        $timestepIndex
+      ].data;
     if (!!prediction) {
       let maxPolicy = (
         prediction.predictions.reduce(
@@ -75,7 +84,7 @@
         ) as OutcomePrediction
       ).policy;
       if (!!maxPolicy) selectedPolicy = maxPolicy.map((p) => p.value);
-      else selectedPolicy = [0, 0, 0];
+      else selectedPolicy = ['< 100 mL Fluids', 'None'];
     }
   } else {
     prediction = undefined;
@@ -90,7 +99,12 @@
     policyPrediction = null;
   }
 
-  const probabilityFormat = d3.format('.2~%');
+  const probabilityFormat = d3.format('.0~%');
+
+  function riskDescription(mean: number): string {
+    if (Math.abs(mean) <= 0.05) return 'no change';
+    return `${probabilityFormat(Math.abs(mean))} ${mean > 0 ? 'increase' : 'decrease'}`;
+  }
 </script>
 
 {#if !!prediction}
@@ -99,15 +113,16 @@
       <div class="text-blue-700 flex-auto">
         <Fa icon={faBedPulse} class="inline mr-2" /><span
           class="font-bold uppercase font-mono mr-2">Sepsis AI Insight</span
-        > Outcome Prediction
+        >
+        Risk of {longName}
       </div>
       {#if showSummary}
         <div class="text-sm">
           {prediction.predictions.length} option{prediction.predictions
             .length != 1
             ? 's'
-            : ''}, {prediction.predictions.filter((p) =>
-            p.predictions.some((x) => (x.pvalue ?? 1) <= 0.05)
+            : ''}, {prediction.predictions.filter(
+            (p) => (p.prediction.pvalue ?? 1) <= 0.05
           ).length} significantly different
         </div>
       {/if}
@@ -122,15 +137,9 @@
     </div>
     {#if !collapsed}
       <div class="mt-2 flex gap-4 w-full items-start">
-        <div
-          class="rounded-md bg-blue-100 p-4 flex flex-col gap-4"
-          style="min-width: 300px; max-width: 50%;"
-        >
-          <div class="text-sm">
-            Select a treatment policy for the next 4 hours to see how the
-            patient's outcome risk may change:
-          </div>
-          {#each ['IV Fluids', 'Vasopressors', 'Diuretics'] as tx, i}
+        <div class="rounded-md bg-blue-100 p-4 flex flex-col gap-4 w-1/2">
+          <div class="text-sm">Select treatments:</div>
+          {#each ['Volume', 'Vasopressors'] as tx, i}
             <div class="w-full">
               <div
                 class="font-bold text-sm uppercase"
@@ -138,28 +147,33 @@
               >
                 {tx}
               </div>
-              <div class="mt-1 flex items-stretch gap-2 w-full">
+              <div
+                class="mt-1 grid gap-2 w-full {TreatmentPolicyNames[tx].length %
+                  3 ==
+                0
+                  ? 'grid-cols-3'
+                  : 'grid-cols-2'}"
+              >
                 {#each TreatmentPolicyNames[tx] as policyVal, policyIdx}
                   <button
-                    class="rounded-md py-2 px-4 grow shrink basis-1 text-xs {selectedPolicy[
-                      i
-                    ] == policyIdx
+                    class="rounded-md py-2 px-4 text-xs {selectedPolicy[i] ==
+                    policyVal
                       ? 'text-white font-bold'
                       : 'bg-blue-50 hover:bg-blue-200'}"
                     class:opacity-30={!prediction.predictions.find((p) =>
                       p.policy?.every(
                         (x, j) =>
-                          x.value == (j == i ? policyIdx : selectedPolicy[j])
+                          x.value == (j == i ? policyVal : selectedPolicy[j])
                       )
                     )}
-                    style={selectedPolicy[i] == policyIdx
+                    style={selectedPolicy[i] == policyVal
                       ? `background-color: ${colorSchemes[i][colorSchemes[i].length - 1]};`
                       : ''}
-                    disabled={selectedPolicy[i] == policyIdx}
+                    disabled={selectedPolicy[i] == policyVal}
                     on:click={() =>
                       (selectedPolicy = [
                         ...selectedPolicy.slice(0, i),
-                        policyIdx,
+                        policyVal,
                         ...selectedPolicy.slice(i + 1),
                       ])}>{policyVal}</button
                   >
@@ -171,13 +185,18 @@
         <div class="flex-auto basis-0">
           <div class="measure">
             {#if !!policyPrediction}
-              <strong>{policyPrediction.sample_size}</strong> out of {prediction
-                .average.sample_size} similar patients received the selected treatment
-              policy.
+              This treatment plan was <Tooltip
+                title="{policyPrediction.sample_size}/100 similar patients"
+                ><span class="hoverable-text"
+                  >{#if policyPrediction.sample_size > 50}very common{:else if policyPrediction.sample_size > 20}somewhat
+                    common{:else}uncommon{/if}</span
+                ></Tooltip
+              >
+              among similar patients.
             {:else}
               <span class="text-slate-600"
-                >Predictions cannot be shown for this treatment policy because
-                not enough similar patients received it.</span
+                >Predictions cannot be shown for this treatment plan because not
+                enough similar patients received it.</span
               >
             {/if}
           </div>
@@ -197,40 +216,45 @@
                 >
               {/each}
             </div> -->
-            {#each policyPrediction.predictions as targetPrediction (targetPrediction.target)}
-              <div class="measure mt-2">
-                The risk of {targetPrediction.target}
-                <strong
-                  >{targetPrediction.mean > 0 ? 'increases' : 'decreases'} by {probabilityFormat(
-                    Math.abs(targetPrediction.mean)
-                  )}</strong
-                >
-                after 4 hours,
-                {#if (targetPrediction?.pvalue ?? 0) > 0.05}
-                  about the same as other similar patients.
-                {:else if targetPrediction.mean > (prediction.average.predictions.find((p) => p.target == targetPrediction.target)?.mean ?? 0)}
-                  <strong>significantly worse</strong> than other similar patients.
-                {:else}
-                  <strong>significantly better</strong> than other similar patients.
-                {/if}
-              </div>
-            {/each}
+            <div class="measure mt-2">
+              By administering this treatment, the risk of {longName}
+              <Tooltip
+                title="{riskDescription(
+                  policyPrediction.prediction.mean
+                )} in risk"
+                ><span class="hoverable-text"
+                  ><strong
+                    >{#if Math.abs(policyPrediction.prediction.mean) > 0.05}{policyPrediction
+                        .prediction.mean > 0
+                        ? 'increases'
+                        : 'decreases'} by {probabilityFormat(
+                        Math.abs(policyPrediction.prediction.mean)
+                      )}{:else}stays the same{/if}</strong
+                  ></span
+                ></Tooltip
+              >
+              after 4 hours,
+              {#if (policyPrediction.prediction.pvalue ?? 0) > 0.05}
+                about the same as
+              {:else if policyPrediction.prediction.mean > (prediction.average.prediction.mean ?? 0)}
+                <strong>significantly worse</strong> than
+              {:else}
+                <strong>significantly better</strong> than
+              {/if}
+              <Tooltip
+                title="{riskDescription(
+                  prediction.average.prediction.mean
+                )} in risk on average"
+                ><span class="hoverable-text">other treatments</span></Tooltip
+              >.
+            </div>
           {/if}
         </div>
       </div>
-      <ExplanationView>
-        The recommendation shows changes in outcome risk over {prediction
-          .average.sample_size} patients with a similar SOFA score ({prediction
-          .severity_range.min} - {prediction.severity_range.max}) as this
-        patient.
-      </ExplanationView>
       {#if showGroundTruth && !!prediction.ground_truth}
-        <div class="mt-4 text-sm text-blue-700">Ground truth:</div>
-        {#each prediction.ground_truth as gt (gt.target)}
-          <div class="mt-2 text-sm">
-            <span class="font-bold">{gt.target}</span>: {gt.label}
-          </div>
-        {/each}
+        <div class="mt-4 text-sm text-blue-700">
+          Ground truth: <strong>{prediction.ground_truth}</strong>
+        </div>
       {/if}
     {/if}
   </div>

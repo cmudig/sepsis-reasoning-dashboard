@@ -55,7 +55,9 @@
     totalCount = Object.values(counts).reduce((a, b) => a + b, 0);
   else totalCount = 1;
 
-  function makeTooltipText(d: Datum) {
+  function makeTooltipText(d: Datum, hover: number) {
+    if (d.count / totalCount <= 0.05 && hover != d.index)
+      return `<strong>${percentFormat(d.count / totalCount)}</strong>`;
     return `<strong>${percentFormat(d.count / totalCount)}</strong> ${d.name}`;
   }
 
@@ -98,7 +100,10 @@
         <BarSegment
           on:hover={(e) => (hoveredIndex = e.detail ? e.detail.index : null)}
         />
-        <BarCaption textFn={makeTooltipText} {hoveredIndex} />
+        <BarCaption
+          textFn={(d) => makeTooltipText(d, hoveredIndex)}
+          {hoveredIndex}
+        />
       </Html>
     </LayerCake>
   </div>

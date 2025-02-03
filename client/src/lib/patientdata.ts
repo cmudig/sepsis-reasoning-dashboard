@@ -7,6 +7,7 @@ export type PatientDataElement = {
   abnormal?: boolean;
   ever?: number;
   children?: PatientDataElement[];
+  expanded?: boolean;
 };
 export type PatientData = {
   [key: string]: {

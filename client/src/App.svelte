@@ -3,16 +3,18 @@
   import { writable, type Writable } from 'svelte/store';
   import type { PatientData } from './lib/patientdata';
   import DataElementPane from './lib/DataElementPane.svelte';
-  import PressorPredictionPane from './lib/rst/PressorPredictionPane.svelte';
-  import FluidBalancePredictionPane from './lib/rst/FluidBalancePredictionPane.svelte';
-  import TreatmentPredictionPane from './lib/rst/TreatmentPredictionPane.svelte';
-  import TreatmentOutcomePredictionPane from './lib/rst/TreatmentOutcomePredictionPane.svelte';
+  import PredictiveIndependentPane from './lib/rst/PredictiveIndependentPane.svelte';
+  import PrescriptivePeerPane from './lib/rst/PrescriptivePeerPane.svelte';
+  import PredictionDependentPane from './lib/rst/PredictionDependentPane.svelte';
   import AiClinicianPane from './lib/rst/AIClinicianPane.svelte';
   import {
     faChevronDown,
+    faChevronLeft,
+    faChevronRight,
     faChevronUp,
   } from '@fortawesome/free-solid-svg-icons';
   import Fa from 'svelte-fa';
+  import DescriptivePane from './lib/rst/DescriptivePane.svelte';
 
   let datasets: string[] = [];
   let currentDataset: string | null = null;
@@ -23,6 +25,8 @@
 
   let timestepIndex: Writable<number> = writable(0);
   setContext('timestepIndex', timestepIndex);
+
+  let interestingTimestepIndexes: number[] = [];
 
   let numTimesteps = 0;
 
@@ -35,11 +39,15 @@
     id: string;
     data: PatientData;
     num_timesteps: number;
+    interesting_indexes?: number[];
   }) {
     visiblePatientID = data.id;
     $patientData = data.data;
     numTimesteps = data.num_timesteps;
-    $timestepIndex = 0;
+    interestingTimestepIndexes = data.interesting_indexes ?? [];
+    $timestepIndex =
+      interestingTimestepIndexes.length > 0 ? interestingTimestepIndexes[0] : 0;
+    console.log('patient data:', $patientData);
   }
 
   async function randomPatient() {
@@ -87,12 +95,35 @@
       <strong>{numTimesteps * 4}</strong>
     </div>
     <input
-      class="w-16 mr-2"
+      class="w-16 mr-1"
       type="range"
       min="0"
       max={numTimesteps - 1}
       bind:value={$timestepIndex}
     />
+    <button
+      class="hover:opacity-50 text-white"
+      title="Go to the previous interesting timestep"
+      on:click={() => {
+        if (interestingTimestepIndexes.length > 0) {
+          $timestepIndex =
+            interestingTimestepIndexes.findLast((t) => t < $timestepIndex) ??
+            interestingTimestepIndexes[0];
+        } else
+          $timestepIndex = ($timestepIndex + numTimesteps - 1) % numTimesteps;
+      }}><Fa icon={faChevronLeft} /></button
+    >
+    <button
+      class="hover:opacity-50 text-white mr-2"
+      title="Go to the next interesting timestep"
+      on:click={() => {
+        if (interestingTimestepIndexes.length > 0) {
+          $timestepIndex =
+            interestingTimestepIndexes.find((t) => t > $timestepIndex) ??
+            interestingTimestepIndexes[interestingTimestepIndexes.length - 1];
+        } else $timestepIndex = ($timestepIndex + 1) % numTimesteps;
+      }}><Fa icon={faChevronRight} /></button
+    >
     <button class="btn btn-dark-slate" on:click={randomPatient}
       >Random Patient</button
     >
@@ -151,16 +182,42 @@
         </button>
       </div>
       <div class="mb-4">
-        <PressorPredictionPane collapsed={allCollapsed} />
+        <DescriptivePane collapsed={allCollapsed} />
       </div>
       <div class="mb-4">
-        <FluidBalancePredictionPane collapsed={allCollapsed} />
+        <PredictiveIndependentPane
+          shortName="vaso"
+          longName="Vasopressor Requirement"
+          outcomeDescription="require prolonged vasopressors over the next 12 hours"
+          collapsed={allCollapsed}
+        />
       </div>
       <div class="mb-4">
-        <TreatmentPredictionPane collapsed={allCollapsed} />
+        <PredictiveIndependentPane
+          shortName="morta"
+          longName="Mortality"
+          outcomeDescription="have a final discharge outcome of mortality"
+          collapsed={allCollapsed}
+        />
       </div>
       <div class="mb-4">
-        <TreatmentOutcomePredictionPane collapsed={allCollapsed} />
+        <PredictionDependentPane
+          shortName="vaso"
+          longName="Vasopressor Requirement"
+          outcomeDescription="require prolonged vasopressors over the next 12 hours"
+          collapsed={allCollapsed}
+        />
+      </div>
+      <div class="mb-4">
+        <PredictionDependentPane
+          shortName="morta"
+          longName="Mortality"
+          outcomeDescription="have a final discharge outcome of mortality"
+          collapsed={allCollapsed}
+        />
+      </div>
+      <div class="mb-4">
+        <PrescriptivePeerPane collapsed={allCollapsed} />
       </div>
       <div class="mb-4">
         <AiClinicianPane collapsed={allCollapsed} />

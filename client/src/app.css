@@ -257,3 +257,8 @@ input[type='search'].flat-text-input {
 .measure {
   max-width: 44em;
 }
+
+.hoverable-text {
+  @apply underline decoration-dashed;
+  text-underline-offset: 4px;
+}

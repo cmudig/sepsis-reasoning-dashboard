@@ -16,11 +16,13 @@ FRONTEND_BUILD_DIR = os.path.join(os.path.dirname(__file__), "client", "dist")
 BUCKET_NAME = "sepsis-challenging-cases"
 BUCKET_DIRECTORIES = [
     "states",
-    "rst_pressor",
-    "rst_uo",
-    "rst_tx_pred",
-    "rst_tx_outcome_pred",
-    "explanations"
+    "descriptive",
+    "predictive_vaso_independent",
+    "predictive_vaso_dependent",
+    "predictive_morta_independent",
+    "predictive_morta_dependent",
+    "prescriptive_peer",
+    "prescriptive_outcome"
 ]
 
 # Initialize GCS client
@@ -108,8 +110,11 @@ def get_patient_files(dataset_name, id):
             
             if not blob.exists():
                 # If the file doesn't exist, return a 404
-                return f"Patient {file_name} not found.", 404
-            
+                if directory == "states":
+                    return f"Patient {file_name} not found.", 404
+                else:
+                    continue
+            print("Found directory", directory, 'for', id)
             # Download and decompress the file
             compressed_data = blob.download_as_bytes()
             uncompressed_data = gzip.decompress(compressed_data)

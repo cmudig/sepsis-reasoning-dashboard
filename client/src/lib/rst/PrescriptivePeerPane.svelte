@@ -10,7 +10,7 @@
     faChevronUp,
   } from '@fortawesome/free-solid-svg-icons';
   import * as d3 from 'd3';
-  import ExplanationView from './ExplanationView.svelte';
+  import DescriptivePane from './DescriptivePane.svelte';
   import CategoryBar from '../charts/CategoryBar.svelte';
 
   export let showGroundTruth: boolean = true;
@@ -50,9 +50,9 @@
   let timestepIndex: Writable<number> = getContext('timestepIndex');
 
   let prediction: TreatmentPrediction | undefined;
-  $: if (!!$patientData && !!$patientData['Treatment Prediction']) {
+  $: if (!!$patientData && !!$patientData['prescriptive_peer']) {
     prediction =
-      $patientData['Treatment Prediction'].timesteps![$timestepIndex].data;
+      $patientData['prescriptive_peer'].timesteps![$timestepIndex].data;
   } else {
     prediction = undefined;
   }
@@ -66,7 +66,7 @@
       <div class="text-blue-700 flex-auto">
         <Fa icon={faBedPulse} class="inline mr-2" /><span
           class="font-bold uppercase font-mono mr-2">Sepsis AI Insight</span
-        > Treatment Prediction
+        > Treatment Recommendation
       </div>
       {#if showSummary}
         {@const numInconsistent = prediction.prediction.reduce(
@@ -109,11 +109,11 @@
           <div class="measure">
             Clinicians would <span class="font-bold">{txPred.pred.choice}</span>
             for similar patients over the next 4 hours{#if !!txPred.pred.choice_prob}
-              &nbsp;({probabilityFormat(txPred.pred.choice_prob)} of the time){/if}.
+              &nbsp;most of the time{/if}.
           </div>
         </div>
         {#if !txPred.pred.consistent}
-          <div class="mt-2 mb-5">
+          <div class="mt-2 mb-6">
             <CategoryBar
               width={null}
               counts={Object.fromEntries(
@@ -126,11 +126,6 @@
         {/if}
       {/each}
 
-      <ExplanationView>
-        The recommendation shows the frequency of treatment actions over 100
-        patients with a similar SOFA score ({prediction.severity_range.min} - {prediction
-          .severity_range.max}) as this patient.
-      </ExplanationView>
       {#if showGroundTruth && !!prediction.ground_truth}
         <div class="mt-4 text-sm text-blue-700">Ground truth:</div>
         {#each prediction.ground_truth as gt (gt.tx)}

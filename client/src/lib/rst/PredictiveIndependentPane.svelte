@@ -10,7 +10,11 @@
     faChevronUp,
   } from '@fortawesome/free-solid-svg-icons';
   import * as d3 from 'd3';
-  import ExplanationView from './ExplanationView.svelte';
+  import Tooltip from '../utils/Tooltip.svelte';
+
+  export let shortName: string = '';
+  export let longName: string = '';
+  export let outcomeDescription: string = '';
 
   export let showGroundTruth: boolean = true;
   export let showSummary: boolean = true;
@@ -21,7 +25,7 @@
 
   // export let colorScale = d3.interpolateTurbo;
 
-  type FluidBalancePrediction = {
+  type Prediction = {
     prediction: string;
     base_rate_comparison?: string;
     prediction_percentage: number;
@@ -36,10 +40,16 @@
   let patientData: Writable<PatientData> = getContext('patientData');
   let timestepIndex: Writable<number> = getContext('timestepIndex');
 
-  let prediction: FluidBalancePrediction | undefined;
-  $: if (!!$patientData && !!$patientData['Fluid Balance Prediction']) {
+  let prediction: Prediction | undefined;
+  $: if (
+    !!$patientData &&
+    !!shortName &&
+    !!$patientData[`predictive_${shortName}_independent`]
+  ) {
     prediction =
-      $patientData['Fluid Balance Prediction'].timesteps![$timestepIndex].data;
+      $patientData[`predictive_${shortName}_independent`].timesteps![
+        $timestepIndex
+      ].data;
   } else {
     prediction = undefined;
   }
@@ -51,15 +61,15 @@
       <div class="text-blue-700 flex-auto">
         <Fa icon={faBedPulse} class="inline mr-2" /><span
           class="font-bold uppercase font-mono mr-2">Sepsis AI Insight</span
-        > Fluid Balance Prediction
+        >
+        Risk of {longName}
       </div>
       {#if showSummary}
         <div class="text-sm">
-          {#if prediction.prediction_percentage > 60}High Risk{:else if prediction.prediction_percentage > 30}Moderate
-            Risk{:else}Low Risk{/if},
-          {#if (prediction.prediction_percentage > 60 && prediction.ground_truth == 'Yes') || (prediction.prediction_percentage < 30 && prediction.ground_truth == 'No')}
+          {prediction.prediction},
+          {#if (prediction.prediction_percentage > 66 && prediction.ground_truth == 'Yes') || (prediction.prediction_percentage < 33 && prediction.ground_truth == 'No')}
             Accurate
-          {:else if (prediction.prediction_percentage < 30 && prediction.ground_truth == 'Yes') || (prediction.prediction_percentage > 60 && prediction.ground_truth == 'No')}
+          {:else if (prediction.prediction_percentage < 33 && prediction.ground_truth == 'Yes') || (prediction.prediction_percentage > 66 && prediction.ground_truth == 'No')}
             Inaccurate
           {:else}Inconclusive
           {/if}
@@ -76,25 +86,24 @@
     </div>
     {#if !collapsed}
       <div class="mt-2 measure">
-        Sepsis AI predicts a <span
-          class="font-bold {prediction.prediction_percentage > 60
-            ? 'text-red-600'
-            : prediction.prediction_percentage > 30
-              ? 'text-yellow-600'
-              : 'text-green-600'}">{prediction.prediction} chance</span
+        Sepsis AI predicts this patient is <Tooltip
+          title="{prediction.prediction_percentage}% chance"
+          ><span
+            class="font-bold hoverable-text {prediction.prediction_percentage >
+            66
+              ? 'text-red-600'
+              : prediction.prediction_percentage > 33
+                ? 'text-yellow-600'
+                : 'text-green-600'}">{prediction.prediction}</span
+          ></Tooltip
         >
-        that this patient will have low urine output over the next 24 hours{#if !!prediction.base_rate_comparison},
+        to {outcomeDescription}{#if !!prediction.base_rate_comparison},
           {prediction.base_rate_comparison}
-          compared to other patients with a similar SOFA score{/if}.
+          compared to <Tooltip title="{prediction.base_rate_percentage}% chance"
+            ><span class="hoverable-text">other patients</span></Tooltip
+          > with a similar SOFA score{/if}.
       </div>
 
-      <ExplanationView>
-        Out of 100 patients with a similar SOFA score ({prediction
-          .severity_range.min} - {prediction.severity_range.max}) as this
-        patient, {prediction.prediction_percentage}% had less than 0.5 ml/kg/hr
-        of urine output over the following 24 hours, compared to {prediction.base_rate_percentage}%
-        of all patients with a similar SOFA score.
-      </ExplanationView>
       {#if showGroundTruth && !!prediction.ground_truth}
         <div class="mt-4 text-sm text-blue-700">
           <strong>Ground Truth:</strong>

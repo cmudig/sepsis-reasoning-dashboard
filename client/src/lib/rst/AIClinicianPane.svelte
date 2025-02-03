@@ -10,7 +10,7 @@
     faChevronUp,
   } from '@fortawesome/free-solid-svg-icons';
   import * as d3 from 'd3';
-  import ExplanationView from './ExplanationView.svelte';
+  import DescriptivePane from './DescriptivePane.svelte';
   import CategoryBar from '../charts/CategoryBar.svelte';
 
   export let showGroundTruth: boolean = true;
@@ -43,9 +43,9 @@
   let timestepIndex: Writable<number> = getContext('timestepIndex');
 
   let recommendation: Recommendation | undefined;
-  $: if (!!$patientData && !!$patientData['AI Clinician']) {
+  $: if (!!$patientData && !!$patientData['prescriptive_outcome']) {
     recommendation =
-      $patientData['AI Clinician'].timesteps![$timestepIndex].data;
+      $patientData['prescriptive_outcome'].timesteps![$timestepIndex].data;
   } else {
     recommendation = undefined;
   }
@@ -56,9 +56,8 @@
     <div class="flex items-center w-full gap-4">
       <div class="text-blue-700 flex-auto">
         <Fa icon={faBedPulse} class="inline mr-2" /><span
-          class="font-bold uppercase font-mono mr-2"
-          >Sepsis AI Recommendation</span
-        >
+          class="font-bold uppercase font-mono mr-2">Sepsis AI Insight</span
+        > Treatment Recommendation
       </div>
       {#if showSummary && !!recommendation.ground_truth}
         <div class="text-sm">
@@ -80,24 +79,17 @@
     </div>
     {#if !collapsed}
       <div class="mt-2 measure">
-        Sepsis AI recommends
+        Over the next 4 hours, Sepsis AI recommends that you
         {#each recommendation.recommendation.slice(0, recommendation.recommendation.length - 1) as rec (rec.tx)}
-          <strong>{rec.description}, </strong>
+          <strong>{rec.description}</strong>
         {/each}and
         <strong
           >{recommendation.recommendation[
             recommendation.recommendation.length - 1
           ].description}</strong
-        > over the next 4 hours.
+        >. This recommendation is based on treatments for similar patients that
+        led to the lowest risk of mortality.
       </div>
-      <ExplanationView>
-        The recommendation is based on {recommendation.sample_size} patients who
-        had a similar SOFA score ({recommendation.severity_range.min} - {recommendation
-          .severity_range.max}) as this patient and who received the recommended
-        treatment. These patients had the greatest improvement in risk of
-        mortality and extended ICU stay over the next 4 hours within a set of
-        100 similar patients.
-      </ExplanationView>
       {#if showGroundTruth && !!recommendation.ground_truth}
         <div class="mt-4 text-sm text-blue-700">Ground truth:</div>
         {#each recommendation.ground_truth as gt, i (gt.tx)}
