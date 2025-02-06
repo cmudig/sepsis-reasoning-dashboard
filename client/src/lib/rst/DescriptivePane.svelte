@@ -44,7 +44,7 @@
     <div class="flex items-center w-full gap-4">
       <div class="text-blue-700 flex-auto">
         <Fa icon={faBedPulse} class="inline mr-2" /><span
-          class="font-bold uppercase font-mono mr-2">Sepsis AI Insight</span
+          class="font-bold uppercase font-mono mr-2">Sepsis AI</span
         > Similar and Different Patient Features
       </div>
       {#if showSummary}

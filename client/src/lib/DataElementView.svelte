@@ -1,7 +1,12 @@
 <script lang="ts">
   import Fa from 'svelte-fa';
   import type { PatientDataElement } from './patientdata';
-  import { faArrowDown, faArrowUp } from '@fortawesome/free-solid-svg-icons';
+  import {
+    faArrowDown,
+    faArrowUp,
+    faCheckCircle,
+    faXmarkCircle,
+  } from '@fortawesome/free-solid-svg-icons';
 
   export let element: PatientDataElement;
 
@@ -38,7 +43,13 @@
             class="inline mr-1 text-xs"
           />
         {/if}
-        {element.value}
+        {#if element.value == 'Yes'}<Fa
+            class="text-xl text-green-400"
+            icon={faCheckCircle}
+          />{:else if element.value == 'No'}<Fa
+            class="text-xl text-pink-400"
+            icon={faXmarkCircle}
+          />{:else}{element.value}{/if}
       </div>
       {#if !!element.unit}
         <div class="text-slate-500 text-xs">{element.unit}</div>

@@ -188,7 +188,7 @@
         <PredictiveIndependentPane
           shortName="vaso"
           longName="Vasopressor Requirement"
-          outcomeDescription="require prolonged vasopressors over the next 12 hours"
+          outcomeDescription="still require prolonged vasopressors after 12 hours"
           collapsed={allCollapsed}
         />
       </div>
@@ -204,7 +204,7 @@
         <PredictionDependentPane
           shortName="vaso"
           longName="Vasopressor Requirement"
-          outcomeDescription="require prolonged vasopressors over the next 12 hours"
+          outcomeDescription="still require prolonged vasopressors after 12 hours"
           collapsed={allCollapsed}
         />
       </div>
