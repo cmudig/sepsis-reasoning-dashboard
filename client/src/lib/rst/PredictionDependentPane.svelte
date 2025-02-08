@@ -102,8 +102,13 @@
   const probabilityFormat = d3.format('.0~%');
 
   function riskDescription(mean: number): string {
-    if (Math.abs(mean) <= 0.05) return 'no change';
-    return `${probabilityFormat(Math.abs(mean))} ${mean > 0 ? 'increase' : 'decrease'}`;
+    if (mean <= 0.01) return 'exceptionally unlikely';
+    else if (mean <= 0.1) return 'very unlikely';
+    else if (mean <= 0.33) return 'unlikely';
+    else if (mean <= 0.66) return 'about as likely as not';
+    else if (mean <= 0.9) return 'likely';
+    else if (mean <= 0.99) return 'very likely';
+    else return 'virtually certain';
   }
 </script>
 
@@ -160,7 +165,7 @@
                     policyVal
                       ? 'text-white font-bold'
                       : 'bg-blue-50 hover:bg-blue-200'}"
-                    class:opacity-30={!prediction.predictions.find((p) =>
+                    class:opacity-60={!prediction.predictions.find((p) =>
                       p.policy?.every(
                         (x, j) =>
                           x.value == (j == i ? policyVal : selectedPolicy[j])
@@ -217,23 +222,22 @@
               {/each}
             </div> -->
             <div class="measure mt-2">
-              By administering this treatment, the risk of {longName}
-              <Tooltip
-                title="{riskDescription(
+              Similar patients who received this treatment were <Tooltip
+                title="{probabilityFormat(
                   policyPrediction.prediction.mean
-                )} in risk"
-                ><span class="hoverable-text"
+                )} chance"
+                ><span
+                  class="font-bold hoverable-text {policyPrediction.prediction
+                    .mean > 0.66
+                    ? 'text-red-600'
+                    : policyPrediction.prediction.mean > 0.33
+                      ? 'text-yellow-600'
+                      : 'text-green-600'}"
                   ><strong
-                    >{#if Math.abs(policyPrediction.prediction.mean) > 0.05}{policyPrediction
-                        .prediction.mean > 0
-                        ? 'increases'
-                        : 'decreases'} by {probabilityFormat(
-                        Math.abs(policyPrediction.prediction.mean)
-                      )}{:else}stays the same{/if}</strong
+                    >{riskDescription(policyPrediction.prediction.mean)}</strong
                   ></span
                 ></Tooltip
-              >
-              after 4 hours,
+              > to {outcomeDescription},
               {#if (policyPrediction.prediction.pvalue ?? 0) > 0.05}
                 about the same as
               {:else if policyPrediction.prediction.mean > (prediction.average.prediction.mean ?? 0)}
@@ -242,9 +246,9 @@
                 <strong>significantly better</strong> than
               {/if}
               <Tooltip
-                title="{riskDescription(
+                title="{probabilityFormat(
                   prediction.average.prediction.mean
-                )} in risk on average"
+                )} chance on average"
                 ><span class="hoverable-text">other treatments</span></Tooltip
               >.
             </div>

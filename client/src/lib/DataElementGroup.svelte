@@ -54,7 +54,7 @@
             dataElements={element.children}
             indent={indent + 1}
             {filterText}
-            collapsed={!(element.expanded ?? false)}
+            collapsed={!filterText && !(element.expanded ?? false)}
           />
         {:else}
           <DataElementView {element} />

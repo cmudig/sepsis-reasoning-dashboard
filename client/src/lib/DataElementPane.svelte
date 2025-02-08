@@ -66,7 +66,7 @@
               name={element.name}
               dataElements={element.children}
               {filterText}
-              collapsed={!(element.expanded ?? false)}
+              collapsed={!filterText && !(element.expanded ?? false)}
             />
           {:else}
             <DataElementView {element} />

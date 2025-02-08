@@ -20,7 +20,7 @@
     : 'flex items-center gap-2 py-1'} mb-2 px-4 rounded-md border border-slate-200 bg-white"
   style="min-height: 4rem;"
 >
-  <div class="flex-auto text-sm">{element.name}</div>
+  <div class="flex-auto text-xs lg:text-sm">{element.name}</div>
   {#if valueMissing}
     <div class="shrink-0 text-right text-slate-500 text-sm">(missing)</div>
   {:else if Array.isArray(element.value)}
