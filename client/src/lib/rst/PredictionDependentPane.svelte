@@ -233,9 +233,7 @@
                     : policyPrediction.prediction.mean > 0.33
                       ? 'text-yellow-600'
                       : 'text-green-600'}"
-                  ><strong
-                    >{riskDescription(policyPrediction.prediction.mean)}</strong
-                  ></span
+                  >{riskDescription(policyPrediction.prediction.mean)}</span
                 ></Tooltip
               > to {outcomeDescription},
               {#if (policyPrediction.prediction.pvalue ?? 0) > 0.05}

@@ -8,6 +8,7 @@ import json
 import gzip
 import traceback
 import random
+import numpy as np
 
 # If in production mode, enable authentication
 PRODUCTION_MODE = os.environ.get("PRODUCTION_MODE") == "1"
@@ -36,7 +37,7 @@ with storage_client.bucket(BUCKET_NAME).blob('meta.json').open('r') as f:
 app = Flask(__name__, template_folder=FRONTEND_BUILD_DIR)
 csrf = CSRFProtect(app)
 
-app.config['LOGIN_DISABLED'] = (os.environ.get("LOGIN_DISABLED") == "1" or not PRODUCTION_MODE)
+app.config['LOGIN_DISABLED'] =  (os.environ.get("LOGIN_DISABLED") == "1" or not PRODUCTION_MODE)
 
 # Read secret key from secret.txt if available, otherwise fallback (dev only)
 if os.path.exists("secret.txt"):
@@ -56,6 +57,11 @@ login_manager.login_view = "/login"
 def base():
     return render_template('index.html')
 
+@app.route("/study")
+@login_required
+def study():
+    return render_template('study.html')
+
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
@@ -65,6 +71,8 @@ def login():
         user = User.authenticate(user_id, password)
         if user:
             login_user(user, remember=remember)
+            if 'next' in request.form and request.form.get('next').startswith('/'):
+                return redirect(request.form.get('next'))
             return redirect("/")
         else:
             return render_template('login.html', template_params='The user ID and password you entered are invalid.')
@@ -144,6 +152,109 @@ def random_patient(dataset_name):
 
     random_id = random.choice(metadata[dataset_name]['patient_ids'])
     return redirect(f"/dataset/{dataset_name}/patient/{random_id}")
+
+def make_participant_assignments(ads_ids, num_ads=7, max_per_ads=2, num_to_generate=48):
+    """
+    Each element of ads_ids should be a list of IDs corresponding to ADS
+    interfaces that have interesting outputs for that patient.
+    """
+
+    min_per_patient = (num_ads * 2) // len(ads_ids)
+    unique_ids = set(id for p in ads_ids for id in p)
+
+    np.random.seed(1234)
+    random.seed(1234)
+    
+    reduced_ads_ids = [[id for id in p] for p in ads_ids]
+    for ads_id in unique_ids:
+        while sum(sum(id == ads_id for id in p) for p in reduced_ads_ids) > max_per_ads:
+            idx_to_remove = np.random.choice([i for i in range(len(reduced_ads_ids))
+                                            if ads_id in reduced_ads_ids[i] and
+                                            len(reduced_ads_ids[i]) > min_per_patient])
+            reduced_ads_ids[idx_to_remove].remove(ads_id)
+    
+    # shuffle the ids
+    while any(len(set(p[i] for p in reduced_ads_ids if i < len(p))) < 
+          len(list(p[i] for p in reduced_ads_ids if i < len(p))) 
+          for i in range(max(len(p) for p in reduced_ads_ids))):
+        reduced_ads_ids = [np.random.permutation(p).tolist() for p in reduced_ads_ids]
+    
+    ordering = []
+    no_ai_index = 0
+    for pid in range(num_to_generate):
+        participant_conditions = [None, None, None, None]
+        for i, current in enumerate(participant_conditions):
+            if i == no_ai_index: participant_conditions[i] = "none"
+            else:
+                # find the first element in the list that has the smallest count so far
+                ads_counts = [(id, sum((i, id) in o for o in ordering)) for id in reduced_ads_ids[i]]
+                min_count = min(ads_counts, key=lambda x: x[1])[1]
+                for option, count in ads_counts:
+                    if count == min_count and option not in participant_conditions:
+                        participant_conditions[i] = option
+                        break
+                        
+        no_ai_index = (no_ai_index + 1) % len(ads_ids)
+        numbered_conditions = list(enumerate(participant_conditions))
+        random.shuffle(numbered_conditions)
+        ordering.append(numbered_conditions)
+
+    print(ordering)
+    print("Counts of conditions:")
+    for condition in unique_ids:
+        print(condition, [sum((i, condition) in x for x in ordering) for i in range(len(ads_ids))])
+        
+    return [{"conditions": [{'patient': i, 'ads': c} for i, c in conditions]}
+            for conditions in ordering]
+
+@app.route('/study_protocol', methods=['GET'])
+def get_study_protocol():    
+    if not app.config['LOGIN_DISABLED'] and not current_user.is_authenticated: return "Not authenticated", 403
+    with storage_client.bucket(BUCKET_NAME).blob(f'study_protocol.json').open('r') as f:
+        study_protocol = json.load(f)
+    condition_ordering_path = storage_client.bucket(BUCKET_NAME).blob(f'condition_ordering.json')
+    if not condition_ordering_path.exists():
+        condition_ordering = make_participant_assignments([p["ads_ids"] for p in study_protocol["patients"]])
+        with condition_ordering_path.open('w') as f:
+            json.dump(condition_ordering, f)
+    else:
+        with condition_ordering_path.open('r') as f:
+            condition_ordering = json.load(f)
+
+    if current_user.is_authenticated:
+        user_id = current_user.user_id
+        print("User ID:", user_id)
+        if user_id in study_protocol["participant_ids"]:
+            participant_id = study_protocol["participant_ids"].index(user_id)
+            print("participantID:", participant_id)
+            # if participant_id == -1:
+            #     return "Invalid participant ID", 400
+        else:
+            participant_id = 0
+            user_id = 'test'
+    else:
+        user_id = 'test'
+        participant_id = 0
+                
+    conditions = condition_ordering[participant_id]["conditions"]
+    return jsonify({
+        "text": study_protocol["text"],
+        "patients": [{
+            **{k: v for k, v in study_protocol["patients"][condition['patient']].items() if k != "ads_ids"},
+            "ads": condition['ads']
+        } for condition in conditions],
+        "dev_mode": user_id == 'test'
+    })
+    
+    
+@app.route('/condition_order', methods=['GET'])
+def get_condition_order():
+    global condition_ordering
+    with storage_client.bucket(BUCKET_NAME).blob(f'study_protocol.json').open('r') as f:
+        study_protocol = json.load(f)
+    if not condition_ordering:
+        condition_ordering = make_participant_assignments([p["ads_ids"] for p in study_protocol["patients"]])
+    return jsonify()
 
 if __name__ == "__main__":
     app.run(debug=True, port=4999)

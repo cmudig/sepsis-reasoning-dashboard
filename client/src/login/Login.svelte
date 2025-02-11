@@ -1,5 +1,6 @@
 <script lang="ts">
   export let csrf;
+  export let next: string | null = null;
   export let errorMessage = '';
 </script>
 
@@ -7,7 +8,7 @@
   <div
     class="w-full h-12 grow-0 shrink-0 bg-slate-700 flex py-2 px-4 items-center text-white font-bold"
   >
-    Sepsis RST Viewer
+    Sepsis AI
   </div>
   <div
     class="flex-auto w-full flex justify-center items-center"
@@ -51,6 +52,7 @@
         </div>
       </fieldset>
       <input type="hidden" name="csrf_token" value={csrf} />
+      <input type="hidden" name="next" value={next ?? '/'} />
       <div class="">
         <input
           class="mt-2 btn btn-blue cursor-pointer"
