@@ -1,11 +1,13 @@
 <script lang="ts">
-  import { getContext } from 'svelte';
+  import { getContext, setContext } from 'svelte';
   import {
     dataElementMatchesFilter,
+    getHistoricalPatientData,
     type PatientData,
     type PatientDataElement,
+    type PatientDataSection,
   } from './patientdata';
-  import type { Writable } from 'svelte/store';
+  import { writable, type Writable } from 'svelte/store';
   import DataElementGroup from './DataElementGroup.svelte';
   import DataElementView from './DataElementView.svelte';
 
@@ -15,9 +17,13 @@
 
   let patientData: Writable<PatientData> = getContext('patientData');
   let timestepIndex: Writable<number> = getContext('timestepIndex');
+  let sectionData: Writable<PatientDataSection | undefined> =
+    writable(undefined);
+  setContext('sectionData', sectionData);
 
   let dataElements: PatientDataElement[] | undefined;
   $: if (!!section && !!$patientData[section]) {
+    $sectionData = $patientData[section];
     if (!!$patientData[section].data) {
       dataElements = $patientData[section].data;
     } else if (!!$patientData[section].timesteps) {
@@ -31,16 +37,17 @@
   let visibleDataElements: PatientDataElement[] | undefined;
   $: if (!!filterText && !!dataElements) {
     visibleDataElements = dataElements.filter((element) =>
-      dataElementMatchesFilter(element, filterText)
+      dataElementMatchesFilter(element, filterText!)
     );
   } else {
     visibleDataElements = dataElements;
   }
 
-  $: console.log('data element:', section, dataElements);
+  let groupElements: DataElementGroup[] = [];
+  $: if (groupElements.length > 0) groupElements[0].expand();
 </script>
 
-{#if !!dataElements && dataElements.length > 0}
+{#if !!dataElements && dataElements.length > 0 && !!$sectionData}
   <div
     class="w-full {!!height ? '' : 'h-full'} flex flex-col"
     style={!!height ? `height: ${height};` : ''}
@@ -66,10 +73,19 @@
               name={element.name}
               dataElements={element.children}
               {filterText}
-              collapsed={!filterText && !(element.expanded ?? false)}
+              collapsed={!filterText}
+              basePath={[element.name]}
+              bind:this={groupElements[i]}
             />
           {:else}
-            <DataElementView {element} />
+            <DataElementView
+              {element}
+              historicalValues={getHistoricalPatientData(
+                $sectionData,
+                $timestepIndex,
+                [element.name]
+              )}
+            />
           {/if}
         {/each}
       {/if}

@@ -190,39 +190,42 @@
         class="w-full h-full absolute top-0 left-0 bg-black/60 flex items-center justify-center"
       >
         <div
-          class="w-1/2 p-8 rounded-md bg-white overflow-y-auto"
+          class="w-1/2 p-8 rounded-md bg-white flex flex-col"
           style="min-width: 400px; max-height: 70%;"
         >
           {#if !dismissedIntroView}
-            <div class="mb-4 font-bold">Sepsis Reasoning Study</div>
-            <div class="mb-4">
-              In this study, we're interested in understanding how physicians
-              reason about treating patients with sepsis. You'll imagine you are
-              working an ICU shift, and you are reviewing information about
-              patients currently in the ICU before presenting them in morning
-              rounds. Your task will be to recommend a treatment plan for this
-              patient to be carried out over the next four hours. Please talk
-              aloud as you interpret the information, reason about it, and come
-              up with your recommendation.
-            </div>
-            <div class="w-full rounded-md bg-blue-50 p-4 mb-2">
-              <div class="text-blue-700 flex-auto">
-                <Fa icon={faBedPulse} class="inline mr-2" /><span
-                  class="font-bold uppercase font-mono mr-2">Sepsis AI</span
-                >
+            <div class="flex-auto min-h-0 overflow-y-auto">
+              <div class="mb-4 font-bold">Sepsis Reasoning Study</div>
+              <div class="mb-4">
+                In this study, we're interested in understanding how physicians
+                reason about treating patients with sepsis. You'll imagine you
+                are working an ICU shift, and you are reviewing information
+                about patients currently in the ICU before presenting them in
+                morning rounds. Your task will be to recommend a treatment plan
+                for this patient to be carried out over the next four hours.
+                Please talk aloud as you interpret the information, reason about
+                it, and come up with your recommendation.
+              </div>
+              <div class="w-full rounded-md bg-blue-50 p-4 mb-2">
+                <div class="text-blue-700 flex-auto">
+                  <Fa icon={faBedPulse} class="inline mr-2" /><span
+                    class="font-bold uppercase font-mono mr-2">Sepsis AI</span
+                  >
+                </div>
+              </div>
+              <div class="mb-4">
+                During some of the cases, you may see a box labeled Sepsis AI
+                with supporting information. This information comes from an AI
+                system that was trained on a database of over 14,000 patients to
+                identify similar patients to the one you're treating. It is
+                designed to give you information about what happened to those
+                prior patients to help you make your recommendation. This model
+                has been validated by expert clinicians at UPMC, and the
+                information it provides is generally accurate, though it can
+                make mistakes.
               </div>
             </div>
-            <div class="mb-4">
-              During some of the cases, you may see a box labeled Sepsis AI with
-              supporting information. This information comes from an AI system
-              that was trained on a database of over 14,000 patients to identify
-              similar patients to the one you're treating. It is designed to
-              give you information about what happened to those prior patients
-              to help you make your recommendation. This model has been
-              validated by expert clinicians at UPMC, and the information it
-              provides is generally accurate, though it can make mistakes.
-            </div>
-            <div class="flex items-center justify-center w-full pt-4">
+            <div class="flex items-center justify-center w-full pt-4 shrink-0">
               <button
                 class="btn btn-blue max-w-full"
                 on:click={(e) => {
@@ -231,18 +234,20 @@
               >
             </div>
           {:else}
-            {#each studyProtocol?.text?.post_patient_items ?? [] as item}
-              {#if !(item.ads_only ?? false) || currentStimulus?.ads != 'none'}
-                <div class="mb-8">
-                  <div class="mb-1 font-bold">{item.question}</div>
-                  {#if !!item.answer_instruction}
-                    <div class="text-slate-600">
-                      {item.answer_instruction}
-                    </div>
-                  {/if}
-                </div>
-              {/if}
-            {/each}
+            <div class="overflow-y-auto min-h-0 flex-auto">
+              {#each studyProtocol?.text?.post_patient_items ?? [] as item}
+                {#if !(item.ads_only ?? false) || currentStimulus?.ads != 'none'}
+                  <div class="mb-8">
+                    <div class="mb-1 font-bold">{item.question}</div>
+                    {#if !!item.answer_instruction}
+                      <div class="text-slate-600">
+                        {item.answer_instruction}
+                      </div>
+                    {/if}
+                  </div>
+                {/if}
+              {/each}
+            </div>
             <div class="flex items-center justify-center w-full pt-4">
               <button
                 class="btn btn-blue max-w-full"

@@ -1,18 +1,30 @@
+<svelte:options accessors />
+
 <script lang="ts">
   import Fa from 'svelte-fa';
   import DataElementView from './DataElementView.svelte';
   import {
     dataElementMatchesFilter,
+    getHistoricalPatientData,
+    type PatientData,
     type PatientDataElement,
+    type PatientDataSection,
   } from './patientdata';
   import {
     faChevronDown,
     faChevronRight,
   } from '@fortawesome/free-solid-svg-icons';
+  import type { Writable } from 'svelte/store';
+  import { getContext } from 'svelte';
+
+  let sectionData: Writable<PatientDataSection | undefined> =
+    getContext('sectionData');
+  let timestepIndex: Writable<number> = getContext('timestepIndex');
 
   export let name: string;
   export let dataElements: PatientDataElement[] = [];
   export let indent = 0;
+  export let basePath: string[] = [];
 
   export let filterText: string | null = null;
   let visibleDataElements: PatientDataElement[] = [];
@@ -29,9 +41,13 @@
   }
 
   export let collapsed = false;
+
+  export function expand() {
+    collapsed = false;
+  }
 </script>
 
-{#if visibleDataElements.length > 0}
+{#if visibleDataElements.length > 0 && !!$sectionData}
   <div
     class="bg-slate-100 rounded-md mb-2"
     style="padding-left: {indent +
@@ -54,10 +70,18 @@
             dataElements={element.children}
             indent={indent + 1}
             {filterText}
-            collapsed={!filterText && !(element.expanded ?? false)}
+            collapsed={!filterText}
+            basePath={[...basePath, element.name]}
           />
         {:else}
-          <DataElementView {element} />
+          <DataElementView
+            {element}
+            historicalValues={getHistoricalPatientData(
+              $sectionData,
+              $timestepIndex,
+              [...basePath, element.name]
+            )}
+          />
         {/if}
       {/each}
     {/if}
