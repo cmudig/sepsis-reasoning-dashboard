@@ -95,7 +95,11 @@ class TemporalDataset(torch.utils.data.Dataset):
         stay_ids, observations, and outputs should all be the same length.
         mask_prob = probability of zeroing any value when returned.
         noise_factor = factor for Gaussian noise to add to inputs
-        weights = vector of same length as stay_ids containing numerical weights to apply to each timestep
+        weights = list with each element corresponding to an input row, and containing a tuple
+            (bin_cutoffs, weights). To create the weights, the input values will be digitized
+            according to the bin cutoffs and then assigned from the weights array. The bin_cutoffs
+            are assumed to have one LESS value than weights, so that the smallest bin cutoff is
+            left-open and the largest bin cutoff is right-open.
         """
         assert len(stay_ids) == len(observations)
         self.observations = observations
@@ -136,9 +140,14 @@ class TemporalDataset(torch.utils.data.Dataset):
         else:
             outputs = np.zeros(len(trajectory_indexes))
         if self.weights is not None:
-            weights = self.weights[trajectory_indexes]
+            weights = np.hstack([
+                feature_weights[np.digitize(observations[:,i], bin_cutoffs)].reshape(-1, 1)
+                for i, (bin_cutoffs, feature_weights) in enumerate(self.weights)
+            ])
+            # weights = self.weights[trajectory_indexes]
         else:
-            weights = np.ones(len(trajectory_indexes))
+            weights = np.ones((len(trajectory_indexes), observations.shape[1]))
+        weights /= weights.sum(axis=1, keepdims=True)
         
         # Mask if needed
         input_obs = observations.copy()
@@ -198,11 +207,10 @@ class CausalConv1d(nn.Conv1d):
         return super(CausalConv1d, self).forward(x)
     
 class TimeSeriesAutoencoder(nn.Module):
-    def __init__(self, architecture, ninp, nhead, nhid, nembed, nencoder, ndecoder, dropout=0.5, device='cpu'):
+    def __init__(self, architecture, ninp, nhead, nhid, nembed, nencoder, num_decoder_heads, dropout=0.5, device='cpu'):
         super().__init__()
         self.ninp = ninp
         self.nencoder = nencoder
-        self.ndecoder = ndecoder
         self.nhid = nhid
         self.nembed = nembed
         self.model_type = architecture
@@ -229,12 +237,11 @@ class TimeSeriesAutoencoder(nn.Module):
             ])
         self.encoder_dropout = nn.Dropout(dropout)
         self.bottleneck = nn.Linear(nhid, nembed)
-        self.decoder = nn.ModuleList([
-            nn.Linear(nembed if i == 0 else nhid, nhid)
-            for i in range(ndecoder)
-        ])
         self.decoder_dropout = nn.Dropout(dropout)
-        self.decoder2 = nn.Linear(nhid, ninp)
+        self.decoder_heads = nn.ModuleList([
+            nn.Linear(nhid, ninp)
+            for _ in range(num_decoder_heads)
+        ])
         self.device = device
 
     def encode(self, src):
@@ -253,25 +260,30 @@ class TimeSeriesAutoencoder(nn.Module):
             output = output.permute(0, 2, 1)
         else:
             output = src
-            for layer in self.dense:
-                output = F.relu(layer(self.encoder_dropout(output)))
-        return self.bottleneck(self.encoder_dropout(output))
+            for i, layer in enumerate(self.dense):
+                output = layer(self.decoder_dropout(output))
+                if i < len(self.dense) - 1: output = F.relu(output)
+        return output
     
     def forward(self, src):
         # src = src.permute(1, 0, 2)
         output = self.encode(src)
-        for layer in self.decoder:
-            output = self.decoder_dropout(F.relu(layer(output)))
-        output = self.decoder2(output)
+        # for layer in self.decoder:
+        #     output = self.decoder_dropout(F.relu(layer(output)))
+        output = tuple(layer(self.decoder_dropout(output)) for layer in self.decoder_heads) #self.decoder2(output)
         # output = output.permute(1, 0, 2)
         return output
     
 class TimeSeriesAutoencoderTrainer:
-    def __init__(self, train_data, val_data, test_data, id_col="id", time_col="time", architecture='transformer', nhead=4, nhid=128, nembed=64, nencoder=2, ndecoder=2, dropout=0.1, device='cpu', lr=5e-4, lr_decay=0.98, n_warmup=2, mask_gamma=1, change_lambda=0.0, shift_epochs=0, checkpoint_path=None, train_weights=None, val_weights=None, test_weights=None, output_exclude_cols=None):
+    def __init__(self, train_data, val_data, test_data,
+                 id_col="id", time_col="time",
+                 architecture='transformer', nhead=4, nhid=128, nembed=32, 
+                 nencoder=2, dropout=0.1, device='cpu', lr=5e-4,
+                 lr_decay=0.98, n_warmup=2, mask_gamma=1, 
+                 checkpoint_path=None,
+                train_weights=None, val_weights=None, test_weights=None):
         ninp = train_data.shape[1] - 2
         self.sequence_length = train_data[time_col].groupby(train_data[id_col]).count().max()
-        self.output_exclude_mask = (torch.from_numpy(~train_data.drop(columns=[id_col, time_col]).columns.isin(output_exclude_cols)) 
-                                    if output_exclude_cols else torch.ones(len(train_data.columns) - 2)).to(device)
         self.train_dataset = TemporalDataset(train_data[id_col].values,
                                              train_data.drop(columns=[id_col, time_col]).values,
                                              None,
@@ -287,7 +299,7 @@ class TimeSeriesAutoencoderTrainer:
                                              None,
                                              weights=test_weights)
         self.device = device
-        self.model = TimeSeriesAutoencoder(architecture=architecture, ninp=ninp, nhead=nhead, nhid=nhid, nembed=nembed, nencoder=nencoder, ndecoder=ndecoder, dropout=dropout, device=self.device).to(self.device)
+        self.model = TimeSeriesAutoencoder(architecture=architecture, ninp=ninp, nhead=nhead, nhid=nhid, nembed=nembed, nencoder=nencoder, num_decoder_heads=3, dropout=dropout, device=self.device).to(self.device)
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=lr, weight_decay=0.1)
         scheduler1 = torch.optim.lr_scheduler.LinearLR(self.optimizer, total_iters=n_warmup)
         scheduler2 = torch.optim.lr_scheduler.StepLR(self.optimizer, 1, gamma=lr_decay)
@@ -296,8 +308,6 @@ class TimeSeriesAutoencoderTrainer:
         self.criterion = nn.MSELoss(reduction='none')
         self.checkpoint_path = checkpoint_path
         self.mask_gamma = mask_gamma
-        self.change_lambda = change_lambda
-        self.shift_epochs = shift_epochs
         
     def load_checkpoint(self):
         checkpoint = torch.load(self.checkpoint_path, map_location=self.device)
@@ -305,12 +315,18 @@ class TimeSeriesAutoencoderTrainer:
         self.optimizer.load_state_dict(checkpoint['optimizer'])
         self.scheduler.load_state_dict(checkpoint['scheduler'])
         
+    def mask_loss(self, loss, weights, lengths, exclude_start=0):
+        loss_mask = torch.arange(loss.shape[1]).to(self.device)[None, :] < lengths[:, None]
+        if exclude_start > 0:
+            loss_mask[:,:exclude_start] = 0
+        loss_masked = (loss * weights).where(loss_mask.unsqueeze(-1), torch.tensor(0.0).to(self.device))
+        return loss_masked.sum() / (loss_mask.sum() + 1e-3)
+    
     def fit(self, epochs=20, batch_size=32, patience=10, loss_callback=None):        
         train_loader = DataLoader(self.train_dataset, batch_size=batch_size, shuffle=True, collate_fn=pad_collate)
         val_loader = DataLoader(self.val_dataset, batch_size=batch_size, collate_fn=pad_collate)
         num_without_improvement = 0
         best_loss = 1e9
-        weight_temperature = 1
         use_amp = self.model.model_type == 'transformer' and self.device == 'cuda'
         scaler = GradScaler(enabled=use_amp)
         for epoch in range(int(np.ceil(epochs))):
@@ -328,22 +344,16 @@ class TimeSeriesAutoencoderTrainer:
                     weights = weights.to(self.device)
                     lengths = lengths.to(self.device)
                     preds = self.model(inputs)
-                    if torch.isnan(preds).any():
-                        print("Nan predictions", torch.isnan(inputs).sum(), lengths)
-                    scaled_weights = torch.exp(weights / weight_temperature) / torch.sum(torch.where(weights > 0, torch.exp(weights / weight_temperature), 0.0))
-                    if self.shift_epochs > 0:
-                        shifted_inputs = torch.cat([inputs[:,1:,:], torch.zeros(inputs.shape[0], 1, inputs.shape[2]).to(self.device)], 1) - inputs
-                        loss = self.change_lambda * (1 - 0.5 * ((preds / (torch.linalg.norm(preds, 2, 2, keepdim=True) + 1e-3)) * (shifted_inputs / (torch.linalg.norm(shifted_inputs, 2, 2, keepdim=True) + 1e-3))).sum(2))
-                    else:
-                        shifted_inputs = inputs
-                        loss = 0
-                    mse_loss = (self.criterion(preds, shifted_inputs) * (scaled_weights * (weights > 0).sum()).unsqueeze(-1))
-                    mse_loss[:,:,~self.output_exclude_mask] = 0
-                    loss += mse_loss.sum(2)
+                    loss = (
+                        self.mask_loss(self.criterion(preds[0], inputs), weights, lengths) + 
+                        self.mask_loss(self.criterion(preds[1], 
+                                                      torch.cat([torch.zeros(inputs.shape[0], 6, inputs.shape[2]), inputs[:,:-6,:]], 1)), 
+                                       torch.cat([torch.zeros(weights.shape[0], 6, weights.shape[2]), weights[:,:-6,:]], 1), 
+                                       lengths, 6) + 
+                        self.mask_loss(self.criterion(preds[2], torch.tile(inputs[:,0:1,:], (1, inputs.shape[1], 1))), 
+                                       torch.tile(weights[:,0:1,:], (1, weights.shape[1], 1)), lengths)
+                    )
                     # loss += self.change_lambda * torch.linalg.norm(shifted_inputs - inputs, 2, 2)
-                    loss_mask = torch.arange(loss.shape[1]).to(self.device)[None, :] < lengths[:, None] - self.shift_epochs
-                    loss_masked = loss.where(loss_mask, torch.tensor(0.0).to(self.device))
-                    loss = loss_masked.sum() / (loss_mask.sum() + 1e-3)
                 scaler.scale(loss).backward()
                 # torch.nn.utils.clip_grad_norm_(self.model.parameters(), 10.0)
                 scaler.step(self.optimizer)
@@ -355,41 +365,28 @@ class TimeSeriesAutoencoderTrainer:
             self.scheduler.step()
             self.train_dataset.mask_prob = min(self.train_dataset.mask_prob * self.mask_gamma, 0.6)
             self.train_dataset.noise_factor = min(self.train_dataset.noise_factor * self.mask_gamma, 1.0)
-            weight_temperature *= 1.1
                 
             self.model.eval()
             with torch.no_grad():
                 bar = tqdm.tqdm(val_loader)
                 # bar = val_loader
-                total_loss = 0.0
+                total_losses = [0] * 3
                 total_batches = 0
-                total_mse = 0.0
                 for inputs, outputs, weights, lengths in bar:
                     with torch.autocast(device_type=self.device, dtype=torch.bfloat16 if self.device == 'cpu' else torch.float16, enabled=use_amp):
                         inputs = inputs.to(self.device)
-                        weights = weights.to(self.device)
                         lengths = lengths.to(self.device)
                         preds = self.model(inputs)
-                        scaled_weights = torch.exp(weights / weight_temperature) / torch.sum(torch.where(weights > 0, torch.exp(weights / weight_temperature), 0.0))
-                        if self.shift_epochs > 0:
-                            shifted_inputs = torch.cat([inputs[:,1:,:], torch.zeros(inputs.shape[0], 1, inputs.shape[2]).to(self.device)], 1) - inputs
-                            # loss = 1 - 0.5 * ((preds / torch.linalg.norm(preds, 2, keepdim=True)) * (shifted_inputs / torch.linalg.norm(shifted_inputs, 2, keepdim=True))).sum(2)
-                        else:
-                            shifted_inputs = inputs
-                            # loss = (self.criterion(preds, shifted_inputs) * (scaled_weights * (weights > 0).sum()).unsqueeze(-1)).mean(2)
-                        loss = (self.criterion(preds, shifted_inputs) * (scaled_weights * (weights > 0).sum()).unsqueeze(-1))
-                        loss[:,:,~self.output_exclude_mask] = 0
-                        loss = loss.mean(2)
-                        # loss = (self.criterion(preds, shifted_inputs) * (scaled_weights * (weights > 0).sum()).unsqueeze(-1)).mean(2)
-                        loss_mask = torch.arange(loss.shape[1]).to(self.device)[None, :] < lengths[:, None] - self.shift_epochs
-                        loss_masked = loss.where(loss_mask, torch.tensor(0.0).to(self.device))
-                        loss = loss_masked.sum() / loss_mask.sum()
-                        total_loss += loss.item()
+                        total_losses[0] += self.mask_loss(self.criterion(preds[0], inputs), weights, lengths).item()
+                        total_losses[1] += self.mask_loss(self.criterion(preds[1], torch.cat([torch.zeros(inputs.shape[0], 6, inputs.shape[2]), inputs[:,:-6,:]], 1)), 
+                                                          torch.cat([torch.zeros(weights.shape[0], 6, weights.shape[2]), weights[:,:-6,:]], 1), lengths, 6).item()
+                        total_losses[2] += self.mask_loss(self.criterion(preds[2], torch.tile(inputs[:,0:1,:], (1, inputs.shape[1], 1))), 
+                                                          torch.tile(weights[:,0:1,:], (1, weights.shape[1], 1)), lengths).item()
                         total_batches += 1
 
-                        bar.set_description(f"Loss: {total_loss / total_batches:.6f}")
+                        bar.set_description(f"Loss: {total_losses[0] / total_batches:.6f}, {total_losses[1] / total_batches:.6f}, {total_losses[2] / total_batches:.6f}")
                     
-            total_loss /= total_batches
+            total_loss = sum(total_losses) / total_batches
             if loss_callback is not None:
                 loss_callback(train_loss, total_loss)
             if total_loss <= best_loss:
