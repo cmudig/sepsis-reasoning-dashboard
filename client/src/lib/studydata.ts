@@ -8,7 +8,9 @@ export type Stimulus = {
 };
 export type StudyProtocol = {
   text: {
+    consent?: string;
     intro_text?: string;
+    pre_survey_link?: string;
     post_patient_items?: {
       question: string;
       answer_instruction?: string;

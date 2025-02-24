@@ -26,12 +26,16 @@
   let loadingPatient: boolean = false;
   let patientLoadError: string | null = null;
 
-  let dismissedIntroView: boolean = false;
-  $: if (!!studyProtocol && !studyProtocol.text.intro_text)
-    dismissedIntroView = true;
+  enum Phase {
+    consent,
+    pre_survey,
+    intro,
+    cases,
+    debrief,
+  }
+  let currentPhase: Phase = Phase.consent;
 
   let showingPostStimulusQuestions: boolean = false;
-  let showingAllADS: boolean = false;
 
   $: if (!!studyProtocol && allPatients.length > stimulusIndex) {
     currentStimulus = studyProtocol.patients[stimulusIndex];
@@ -47,6 +51,7 @@
     loadingPatient = true;
     try {
       studyProtocol = await (await fetch('/study_protocol')).json();
+      currentPhase = Phase.consent;
       allPatients = await Promise.all(
         studyProtocol!.patients.map(
           async (p) =>
@@ -63,12 +68,40 @@
     loadingPatient = false;
   });
 
+  $: if (
+    !!studyProtocol &&
+    currentPhase == Phase.consent &&
+    !studyProtocol?.text.consent
+  )
+    currentPhase = Phase.pre_survey;
+  $: if (
+    !!studyProtocol &&
+    currentPhase == Phase.pre_survey &&
+    !studyProtocol?.text.pre_survey_link
+  )
+    currentPhase = Phase.intro;
+  $: if (
+    !!studyProtocol &&
+    currentPhase == Phase.intro &&
+    !studyProtocol?.text.intro_text
+  )
+    currentPhase = Phase.cases;
+
   function advanceStimulus() {
     stimulusIndex++;
     showingPostStimulusQuestions = false;
     if (stimulusIndex == allPatients.length) {
-      showingAllADS = true;
+      currentPhase = Phase.debrief;
     }
+  }
+
+  function formatText(text: string): string {
+    return text
+      .replaceAll(
+        /\*\*([^*]*)\*\*\n/g,
+        '<div style="font-weight: bold; margin-top: 12px;">$1</div>'
+      )
+      .replaceAll('\n', '<br/>');
   }
 </script>
 
@@ -85,7 +118,7 @@
         Dev Mode
       </div>
     {/if}
-    {#if !!currentStimulus && dismissedIntroView}
+    {#if !!currentStimulus && currentPhase >= Phase.cases}
       <div class="mx-2">
         Patient {stimulusIndex + 1} of {studyProtocol?.patients.length}
       </div>
@@ -95,7 +128,7 @@
     >
   </div>
   <div class="flex-auto w-full flex h-0 relative">
-    {#if showingAllADS && !!studyProtocol}
+    {#if currentPhase == Phase.debrief && !!studyProtocol}
       <div class="w-full h-full flex justify-center overflow-y-auto">
         <div class="w-1/2 max-w-full" style="min-width: 600px;">
           <div class="py-4">
@@ -120,7 +153,7 @@
           </div>
         </div>
       </div>
-    {:else if dismissedIntroView}
+    {:else if currentPhase == Phase.cases}
       <div class="h-full w-1/4 px-4 overflow-hidden">
         <DataElementPane section="Demographics" />
       </div>
@@ -185,7 +218,7 @@
         </div>
       </div>
     {/if}
-    {#if showingPostStimulusQuestions || !dismissedIntroView}
+    {#if (showingPostStimulusQuestions || currentPhase == Phase.intro || currentPhase == Phase.consent || currentPhase == Phase.pre_survey) && !!studyProtocol}
       <div
         class="w-full h-full absolute top-0 left-0 bg-black/60 flex items-center justify-center"
       >
@@ -193,18 +226,11 @@
           class="w-1/2 p-8 rounded-md bg-white flex flex-col"
           style="min-width: 400px; max-height: 70%;"
         >
-          {#if !dismissedIntroView}
+          {#if currentPhase == Phase.intro}
             <div class="flex-auto min-h-0 overflow-y-auto">
-              <div class="mb-4 font-bold">Sepsis Reasoning Study</div>
+              <div class="mb-4 font-bold">Study Overview</div>
               <div class="mb-4">
-                In this study, we're interested in understanding how physicians
-                reason about treating patients with sepsis. You'll imagine you
-                are working an ICU shift, and you are reviewing information
-                about patients currently in the ICU before presenting them in
-                morning rounds. Your task will be to recommend a treatment plan
-                for this patient to be carried out over the next four hours.
-                Please talk aloud as you interpret the information, reason about
-                it, and come up with your recommendation.
+                {@html formatText(studyProtocol?.text.intro_text ?? '')}
               </div>
               <div class="w-full rounded-md bg-blue-50 p-4 mb-2">
                 <div class="text-blue-700 flex-auto">
@@ -229,8 +255,45 @@
               <button
                 class="btn btn-blue max-w-full"
                 on:click={(e) => {
-                  dismissedIntroView = true;
+                  currentPhase++;
                 }}>Continue</button
+              >
+            </div>
+          {:else if currentPhase == Phase.pre_survey}
+            <div class="flex-auto min-h-0 overflow-y-auto">
+              <div class="mb-4 font-bold">Pre-Survey</div>
+              <div class="mb-4">
+                Please <a
+                  class="text-blue-500"
+                  href={studyProtocol.text.pre_survey_link}
+                  target="_blank">click this link</a
+                > to complete a brief survey before the decision-making portion of
+                the study.
+              </div>
+            </div>
+            <div class="flex items-center justify-center w-full pt-4 shrink-0">
+              <button
+                class="btn btn-blue max-w-full"
+                on:click={(e) => {
+                  currentPhase++;
+                }}>Continue when survey is completed</button
+              >
+            </div>
+          {:else if currentPhase == Phase.consent}
+            <div class="flex-auto min-h-0 overflow-y-auto">
+              <div class="mb-4 font-bold">
+                Sepsis Reasoning Study: Informed Consent
+              </div>
+              <div class="mb-4">
+                {@html formatText(studyProtocol?.text.consent ?? '')}
+              </div>
+            </div>
+            <div class="flex items-center justify-center w-full pt-4 shrink-0">
+              <button
+                class="btn btn-blue max-w-full"
+                on:click={(e) => {
+                  currentPhase++;
+                }}>Yes, Continue</button
               >
             </div>
           {:else}

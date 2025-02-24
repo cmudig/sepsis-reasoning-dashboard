@@ -34,22 +34,28 @@ export function dataElementMatchesFilter(
 export function getHistoricalPatientData(
   data: PatientDataSection,
   timestepIndex: number,
-  path: string[]
+  path: string[],
+  maxTimesteps: number = 42
 ): { time: number; data: PatientDataElement | null }[] {
   if (!data.timesteps) return [];
 
-  return data.timesteps!.slice(0, timestepIndex + 1).map((timestep) => ({
-    time: timestep.time,
-    data:
-      path
-        .slice(0, path.length - 1)
-        .reduce(
-          (prev, childName) =>
-            !!prev
-              ? prev.find((e) => e.name == childName)?.children ?? null
-              : null,
-          timestep.data as PatientDataElement[] | null
-        )
-        ?.find((e) => e.name == path[path.length - 1]) ?? null,
-  }));
+  return data
+    .timesteps!.slice(
+      Math.max(0, timestepIndex + 1 - maxTimesteps),
+      timestepIndex + 1
+    )
+    .map((timestep) => ({
+      time: timestep.time,
+      data:
+        path
+          .slice(0, path.length - 1)
+          .reduce(
+            (prev, childName) =>
+              !!prev
+                ? prev.find((e) => e.name == childName)?.children ?? null
+                : null,
+            timestep.data as PatientDataElement[] | null
+          )
+          ?.find((e) => e.name == path[path.length - 1]) ?? null,
+    }));
 }
