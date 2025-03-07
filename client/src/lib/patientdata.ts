@@ -8,6 +8,7 @@ export type PatientDataElement = {
   ever?: number;
   children?: PatientDataElement[];
   expanded?: boolean;
+  hide_in_study?: boolean;
 };
 export type PatientDataSection = {
   data?: any[];

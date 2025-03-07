@@ -63,6 +63,10 @@
           class="font-bold uppercase font-mono mr-2">Sepsis AI</span
         >
         Risk of {longName}
+        <Tooltip
+          hoverTargetClass="inline text-blue-700 hover:opacity-50 px-1"
+          title="This AI uses average outcomes of similar patients to calculate the risk that your patient will {outcomeDescription}."
+        />
       </div>
       {#if showSummary}
         <div class="text-sm">

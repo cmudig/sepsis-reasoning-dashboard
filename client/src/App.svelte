@@ -193,7 +193,7 @@
         <div class="flex items-center w-full gap-2">
           <div class="text-sm shrink-0">
             <span class="text-slate-600">Hour</span>
-            <strong>{$timestepIndex * 4 + 1}</strong>
+            <strong>{($timestepIndex + 1) * 4}</strong>
             <span class="text-slate-600">of</span>
             <strong>{numTimesteps * 4}</strong>
           </div>
@@ -250,7 +250,7 @@
       </div>
     </div>
     <div class="h-full w-1/4 pr-4 overflow-hidden">
-      <DataElementPane section="State" filterable />
+      <DataElementPane section="State" title="Patient Data" filterable />
     </div>
     <div class="border-l border-slate-400 p-4 h-full w-1/2 overflow-y-auto">
       <div class="pb-4 flex items-center">
@@ -270,7 +270,7 @@
           <PredictiveIndependentPane
             shortName="vaso"
             longName="Vasopressor Requirement"
-            outcomeDescription="still require vasopressors after 12 hours"
+            outcomeDescription="require vasopressors after 12 hours"
             collapsible={visiblePane == Panes.all}
           />
         </div>
@@ -290,7 +290,7 @@
           <PredictionDependentPane
             shortName="vaso"
             longName="Vasopressor Requirement"
-            outcomeDescription="still require vasopressors after 12 hours"
+            outcomeDescription="require vasopressors after 12 hours"
             collapsible={visiblePane == Panes.all}
           />
         </div>

@@ -8,6 +8,12 @@
   import { setContext } from 'svelte';
   import { writable, type Writable } from 'svelte/store';
   import type { PatientData } from '../lib/patientdata';
+  import { formatText } from '../lib/utils/utils';
+  import Fa from 'svelte-fa';
+  import {
+    faChevronDown,
+    faChevronUp,
+  } from '@fortawesome/free-solid-svg-icons';
 
   export let patientData: Writable<PatientData> = writable({});
   setContext('patientData', patientData);
@@ -19,14 +25,25 @@
   export let currentStimulus: Stimulus | null = null;
 
   export let showPrompt: boolean = true;
+
+  let vignetteExpanded: boolean = false;
 </script>
 
 {#if !!currentStimulus && !!studyProtocol}
   <div class="mb-2 font-bold">{currentStimulus.pseudonym}</div>
-  <div class="mb-4 leading-relaxed text-sm">{currentStimulus.vignette}</div>
-  {#if showPrompt && !!studyProtocol && studyProtocol.text?.prompt_text}
-    <div class="mb-4 font-bold">{studyProtocol.text.prompt_text}</div>
-  {/if}
+  <div
+    class="mb-2 leading-relaxed text-sm"
+    class:line-clamp-3={!vignetteExpanded}
+  >
+    {@html formatText(currentStimulus.vignette)}
+  </div>
+  <button
+    class="text-sm text-blue-600 hover:opacity-50 mb-4"
+    on:click={() => (vignetteExpanded = !vignetteExpanded)}
+    >{#if vignetteExpanded}<Fa icon={faChevronUp} class="inline mr-2" /> Hide patient
+      summary{:else}<Fa icon={faChevronDown} class="inline mr-2" /> Expand patient
+      summary...{/if}</button
+  >
   {#if currentStimulus.ads == 'descriptive'}
     <div class="mb-4">
       <DescriptivePane collapsible={false} showSummary={false} />
@@ -37,7 +54,7 @@
       <PredictiveIndependentPane
         shortName="vaso"
         longName="Vasopressor Requirement"
-        outcomeDescription="still require vasopressors after 12 hours"
+        outcomeDescription="require vasopressors after 12 hours"
         collapsible={false}
         showGroundTruth={false}
         showSummary={false}
@@ -61,7 +78,7 @@
       <PredictionDependentPane
         shortName="vaso"
         longName="Vasopressor Requirement"
-        outcomeDescription="still require vasopressors after 12 hours"
+        outcomeDescription="require vasopressors after 12 hours"
         collapsible={false}
         showGroundTruth={false}
         showSummary={false}
@@ -96,6 +113,11 @@
         showGroundTruth={false}
         showSummary={false}
       />
+    </div>
+  {/if}
+  {#if showPrompt && !!studyProtocol && studyProtocol.text?.prompt_text}
+    <div class="mb-4">
+      {@html formatText(studyProtocol.text.prompt_text)}
     </div>
   {/if}
 {/if}

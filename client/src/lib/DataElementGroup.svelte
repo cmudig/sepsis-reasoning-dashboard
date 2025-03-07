@@ -25,6 +25,7 @@
   export let dataElements: PatientDataElement[] = [];
   export let indent = 0;
   export let basePath: string[] = [];
+  export let studyEnvironment: boolean = false;
 
   export let filterText: string | null = null;
   let visibleDataElements: PatientDataElement[] = [];
@@ -65,14 +66,17 @@
     {#if !collapsed}
       {#each visibleDataElements as element, i (element.name ?? i)}
         {#if element.children}
-          <svelte:self
-            name={element.name}
-            dataElements={element.children}
-            indent={indent + 1}
-            {filterText}
-            collapsed={!filterText}
-            basePath={[...basePath, element.name]}
-          />
+          {#if !studyEnvironment || !(element.hide_in_study ?? false)}
+            <svelte:self
+              name={element.name}
+              dataElements={element.children}
+              indent={indent + 1}
+              {filterText}
+              collapsed={!filterText}
+              basePath={[...basePath, element.name]}
+              {studyEnvironment}
+            />
+          {/if}
         {:else}
           <DataElementView
             {element}
@@ -81,6 +85,7 @@
               $timestepIndex,
               [...basePath, element.name]
             )}
+            {studyEnvironment}
           />
         {/if}
       {/each}

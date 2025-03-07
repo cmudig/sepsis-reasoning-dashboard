@@ -84,7 +84,7 @@ class PredictiveActionDependentInformation:
         self.train_treatments = train_treatments
         self.severity_cutoffs = severity_cutoffs
 
-    def get_prediction(self, neighbor_idxs, severity_quantile=None, true_outcome=None):
+    def get_prediction(self, neighbor_idxs, severity_quantile=None, true_outcome=None, last_treatment=None):
         # first get the indices of the next timestep in each nearest neighbor's trajectory
         neighbor_next_steps, neighbor_mask = make_forward_neighbors(neighbor_idxs.reshape(1, -1), 
                                                                     self.train_ids, 
@@ -131,6 +131,8 @@ class PredictiveActionDependentInformation:
                                                     neighbor_next_steps[~neighbor_mask]))
         return {
             "predictions": [p for p in all_predictions if p],
+            "treatment_names": [[info["long_names"](v, last) for v in range(info["num_actions"])] 
+                                for info, last in zip(TREATMENT_INFO, last_treatment if last_treatment is not None else [None] * len(TREATMENT_INFO))],
             "average": make_outcome_rep(None, neighbor_idxs[~neighbor_mask], neighbor_next_steps[~neighbor_mask]),
             **({"ground_truth": "Yes" if true_outcome else "No"} if true_outcome is not None else {}),
             **({"severity_range": {

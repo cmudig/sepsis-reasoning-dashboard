@@ -12,6 +12,7 @@
   import * as d3 from 'd3';
   import DescriptivePane from './DescriptivePane.svelte';
   import CategoryBar from '../charts/CategoryBar.svelte';
+  import Tooltip from '../utils/Tooltip.svelte';
 
   export let showGroundTruth: boolean = true;
   export let showSummary: boolean = true;
@@ -57,7 +58,11 @@
       <div class="text-blue-700 flex-auto">
         <Fa icon={faBedPulse} class="inline mr-2" /><span
           class="font-bold uppercase font-mono mr-2">Sepsis AI</span
-        > Treatment Recommendation
+        >
+        Treatment Recommendation <Tooltip
+          hoverTargetClass="inline text-blue-700 hover:opacity-50 px-1"
+          title="This AI recommends a treatment plan that was associated with lower mortality when it was given to patients similar to yours."
+        />
       </div>
       {#if showSummary && !!recommendation.ground_truth}
         <div class="text-sm">

@@ -11,6 +11,7 @@
   } from '@fortawesome/free-solid-svg-icons';
   import * as d3 from 'd3';
   import DescriptivePane from './DescriptivePane.svelte';
+  import Tooltip from '../utils/Tooltip.svelte';
 
   export let colorScale = d3.interpolateTurbo;
 
@@ -45,7 +46,11 @@
       <div class="text-blue-700 flex-auto">
         <Fa icon={faBedPulse} class="inline mr-2" /><span
           class="font-bold uppercase font-mono mr-2">Sepsis AI</span
-        > Similar and Different Patient Features
+        >
+        Similar and Different Patient Features <Tooltip
+          hoverTargetClass="inline text-blue-700 hover:opacity-50 px-1"
+          title="This AI presents features from the patient's clinical data that make it similar to other cases, and features that make it unusual."
+        />
       </div>
       {#if showSummary}
         <div class="text-sm">

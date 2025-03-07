@@ -222,7 +222,7 @@ def get_study_protocol():
             condition_ordering = json.load(f)
 
     if current_user.is_authenticated:
-        user_id = current_user.user_id
+        user_id = current_user.get_id()
         print("User ID:", user_id)
         if user_id in study_protocol["participant_ids"]:
             participant_id = study_protocol["participant_ids"].index(user_id)

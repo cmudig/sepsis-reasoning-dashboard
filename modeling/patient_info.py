@@ -41,27 +41,23 @@ NORMAL_RANGES = {
 state_features = [
     {
         "name": "Summary",
-        "expanded": True,
         "children": [
             { "name": "Heart Rate", "unit": "bpm" }, 
             "Heart Rhythm", 
             { "name": "mAP", "unit": "mmHg" }, 
             { "name": "Temperature", "col": "Temperature C", "unit": "º C" }, 
             "Invasive Ventilation", 
-            "Immunosuppressant",
-            "Dialysis",
-            { "name": "Positive Culture",
-              "list_positive": {
-                  "Positive Blood Culture": "Blood",
-                  "Positive Urine Culture": "Urine",
-                  "Positive Stool Culture": "Stool",
-                  "Positive Swab Culture": "Swab",
-                  "Positive Tissue Culture": "Tissue",
-                  "Positive Sputum Culture": "Sputum",
-              }
-            },
-            "Antimicrobial",
-            { "name": "Fluid Balance", "unit": "ml" },
+            # { "name": "Positive Culture",
+            #   "list_positive": {
+            #       "Positive Blood Culture": "Blood",
+            #       "Positive Urine Culture": "Urine",
+            #       "Positive Stool Culture": "Stool",
+            #       "Positive Swab Culture": "Swab",
+            #       "Positive Tissue Culture": "Tissue",
+            #       "Positive Sputum Culture": "Sputum",
+            #   }
+            # },
+            # { "name": "Cumulative Fluid Balance", "col": "Fluid Balance", "unit": "ml" },
             { "name": "Vasopressors",
               "list_positive": {
                   "vaso_Dopamine": "Dopamine",
@@ -74,20 +70,21 @@ state_features = [
         ]
     },
     {
-        "name": "Vitals",
+        "name": "Vital Signs",
         "children": [
+            { "name": "Temperature", "col": "Temperature C", "unit": "º C" }, 
             { "name": "Heart Rate", "unit": "bpm" }, 
             "Heart Rhythm", 
-            { "name": "BP Systolic", "col": "SysBP", "unit": "mmHg" }, 
-            { "name": "BP Diastolic", "col": "DiaBP", "unit": "mmHg" } ,
+            # { "name": "BP Systolic", "col": "SysBP", "unit": "mmHg" }, 
+            # { "name": "BP Diastolic", "col": "DiaBP", "unit": "mmHg" } ,
             { "name": "mAP", "unit": "mmHg" }, 
-            "CVP", 
-            { "name": "Temperature", "col": "Temperature C", "unit": "º C" }, 
-            { "name": "PAPmean", "exclude_missing": True }, 
+            { "name": "Respiratory Rate", "exclude_missing": True }, 
+            { "name": "SpO2", "exclude_missing": True }, 
+            # { "name": "PAPmean", "exclude_missing": True }, 
         ]
     },
     {
-        "name": "Labs",
+        "name": "Basic Labs",
         "children": [
             {
                 "name": "Chemistries",
@@ -129,6 +126,85 @@ state_features = [
         ]
     },
     {
+        "name": "Hemodynamics",
+        "children": [
+            { "name": "Cumulative Fluid Balance", "col": "Fluid Balance", "unit": "ml" },
+            { "name": "Fluids Last 4 h", "unit": "ml" },
+            { "name": "Fluid Type",
+                "list_positive": {
+                    "Fluid_Isotonic Crystalloid": "Isotonic Crystalloid",
+                    "Fluid_Hypertonic Crystalloid": "Hypertonic Crystalloid",
+                    "Fluid_Hypotonic Crystalloid": "Hypotonic Crystalloid",
+                    "Fluid_Isotonic Colloid": "Isotonic Colloid",
+                    "Fluid_Blood Products": "Blood Products",
+                }
+            },
+            { "name": "Fluids Last 24 h", "unit": "ml" },
+            { "name": "Recent Diuretic", "col": "Diuretic" }, 
+            { "name": "Urine Output Last 24 h", "col": "Urine Last 24 h", "unit": "ml" }, 
+            # { "name": "Non-Urine Fluid", "unit": "ml", "exclude_missing": True }, 
+            { "name": "Vasopressor", "unit": "mcg/kg/min" },
+            { "name": "Vasopressor Type",
+                "list_positive": {
+                    "vaso_Dopamine": "Dopamine",
+                    "vaso_Epinephrine": "Epinephrine",
+                    "vaso_Norepinephrine": "Norepinephrine",
+                    "vaso_Phenylephrine": "Phenylephrine",
+                    "vaso_Vasopressin": "Vasopressin",
+                }
+            }
+        ]
+    },
+    {
+        "name": "Respiratory",
+        "children": [
+            "Invasive Ventilation", 
+            "Non-invasive Ventilation", 
+            "O2 Delivery Device", 
+            { "name": "Respiratory Rate", "exclude_missing": True }, 
+            { "name": "SpO2", "exclude_missing": True }, 
+            {
+                "name": "Vent Settings",
+                "children": [
+                    { "name": "Tidal Volume", "exclude_missing": True }, 
+                    { "name": "PEEP", "exclude_missing": True }, 
+                    { "name": "FiO2", "exclude_missing": True }, 
+                    { "name": "Minute Volume", "exclude_missing": True }, 
+                    { "name": "Plateau Pressure", "exclude_missing": True }, 
+                    # { "name": "Peak Inspiratory Pressure", "exclude_missing": True }, 
+                    # { "name": "Mean Airway Pressure", "exclude_missing": True }, 
+                ]
+            },
+        ]
+    },
+    {
+        "name": "Infectious Disease",
+        "hide_in_study": True,
+        "children": [
+            { "name": "Positive Culture",
+              "list_positive": {
+                  "Positive Blood Culture": "Blood",
+                  "Positive Urine Culture": "Urine",
+                  "Positive Stool Culture": "Stool",
+                  "Positive Swab Culture": "Swab",
+                  "Positive Tissue Culture": "Tissue",
+                  "Positive Sputum Culture": "Sputum",
+              }
+            },
+            "Antimicrobial", 
+            "Immunosuppressant",
+        ]
+    },
+    {
+        "name": "Cardiac",
+        "children": [
+            # "Heart Rhythm", 
+            # "Cardioversion/Defibrillation", 
+            "CVP", 
+            "Lactic Acid", 
+            "Troponin"
+    ]},
+    {
         "name": "Renal",
         "children": [
             "Dialysis",
@@ -145,101 +221,10 @@ state_features = [
             "Direct Bili"
     ]},
     {
-        "name": "Cardiac",
-        "children": [
-            "Heart Rhythm", 
-            "Cardioversion/Defibrillation", 
-            "Lactic Acid", 
-            "Troponin"
-    ]},
-    {
         "name": "Neuro",
         "children": [
             "RASS", 
             "GCS",
-        ]
-    },
-    {
-        "name": "Respiratory",
-        "children": [
-            "Invasive Ventilation", 
-            "Non-invasive Ventilation", 
-            "O2 Delivery Device", 
-            {
-                "name": "Vent Settings",
-                "children": [
-                    { "name": "Tidal Volume", "exclude_missing": True }, 
-                    { "name": "Respiratory Rate", "exclude_missing": True }, 
-                    { "name": "PEEP", "exclude_missing": True }, 
-                    { "name": "FiO2", "exclude_missing": True }, 
-                    { "name": "SpO2", "exclude_missing": True }, 
-                    { "name": "Minute Volume", "exclude_missing": True }, 
-                    { "name": "Plateau Pressure", "exclude_missing": True }, 
-                    { "name": "Peak Inspiratory Pressure", "exclude_missing": True }, 
-                    { "name": "Mean Airway Pressure", "exclude_missing": True }, 
-                ]
-            },
-        ]
-    },
-    {
-        "name": "Infectious Disease",
-        "children": [
-            { "name": "Positive Culture",
-              "list_positive": {
-                  "Positive Blood Culture": "Blood",
-                  "Positive Urine Culture": "Urine",
-                  "Positive Stool Culture": "Stool",
-                  "Positive Swab Culture": "Swab",
-                  "Positive Tissue Culture": "Tissue",
-                  "Positive Sputum Culture": "Sputum",
-              }
-            },
-            "Antimicrobial", 
-        ]
-    },
-    {
-        "name": "Hemodynamics",
-        "children": [
-            { "name": "Fluid Balance", "unit": "ml" },
-            {
-                "name": "Fluids",
-                "children": [
-                    { "name": "Fluids Last 4 h", "unit": "ml" },
-                    { "name": "Fluid Type",
-                      "list_positive": {
-                          "Fluid_Isotonic Crystalloid": "Isotonic Crystalloid",
-                          "Fluid_Hypertonic Crystalloid": "Hypertonic Crystalloid",
-                          "Fluid_Hypotonic Crystalloid": "Hypotonic Crystalloid",
-                          "Fluid_Isotonic Colloid": "Isotonic Colloid",
-                          "Fluid_Blood Products": "Blood Products",
-                      }
-                    },
-                    { "name": "Fluids Last 24 h", "unit": "ml" }
-                ]
-            },
-            {
-                "name": "Outputs",
-                "children": [
-                    "Diuretic", 
-                    { "name": "Urine Last 24 h", "unit": "ml" }, 
-                    { "name": "Non-Urine Fluid", "unit": "ml", "exclude_missing": True }, 
-                ]
-            },
-            {
-                "name": "Vasopressors",
-                "children": [
-                    { "name": "Vasopressor", "unit": "mcg/kg/min" },
-                    { "name": "Vasopressor Type",
-                      "list_positive": {
-                          "vaso_Dopamine": "Dopamine",
-                          "vaso_Epinephrine": "Epinephrine",
-                          "vaso_Norepinephrine": "Norepinephrine",
-                          "vaso_Phenylephrine": "Phenylephrine",
-                          "vaso_Vasopressin": "Vasopressin",
-                      }
-                    }
-                ]
-            }
         ]
     },
 ]
@@ -250,6 +235,7 @@ demog_features = [
     "BMI",
     {
         "name": "Relevant Comorbidities",
+        "hide_in_study": True,
         "list_positive": {
             "aids": "AIDS", 
             "blood_loss_anemia": "Blood Loss Anemia", 
@@ -307,6 +293,8 @@ def create_state_dict(spec, patient_row):
             result["name"] = item["name"]
             if "expanded" in item:
                 result["expanded"] = item["expanded"]
+            if "hide_in_study" in item:
+                result["hide_in_study"] = item["hide_in_study"]
         else:
             result["value"] = patient_row[item]
             result["name"] = item

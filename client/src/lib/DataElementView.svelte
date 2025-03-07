@@ -22,6 +22,7 @@
     time: number;
     data: PatientDataElement | null;
   }[] = [];
+  export let studyEnvironment: boolean = false;
 
   let valueMissing: boolean;
   $: valueMissing = !((element.present ?? true) != 0 && element.value !== null);
@@ -126,85 +127,86 @@
   const yAxisFormat = d3.format('.3~');
 </script>
 
-<a
-  class="bg-white block mb-2 rounded-md border border-slate-200 {pastData.length ==
-  0
-    ? 'pointer-events-none'
-    : 'hover:bg-slate-50'}"
-  on:click={(e) => (expanded = !expanded)}
-  href="#"
->
-  <div
-    class="{typeof element.value === 'string' && element.value.length > 100
-      ? 'py-3'
-      : 'flex items-center gap-2 py-1'} px-4"
-    style="min-height: 4rem;"
-    title={pastData.length == 0
-      ? ''
-      : `Click to ${expanded ? 'hide' : 'show'} recent values`}
+{#if !studyEnvironment || !(element.hide_in_study ?? false)}
+  <a
+    class="bg-white block mb-2 rounded-md border border-slate-200 {pastData.length ==
+    0
+      ? 'pointer-events-none'
+      : 'hover:bg-slate-50'}"
+    on:click={(e) => (expanded = !expanded)}
+    href="#"
   >
-    <div class="flex-auto text-xs lg:text-sm">{element.name}</div>
-    {#if valueMissing}
-      <div class="shrink-0 text-right text-slate-500 text-sm">(missing)</div>
-    {:else if Array.isArray(element.value)}
-      <div class="text-right">
-        {#each element.value as value, i (value)}
-          <div class="text-sm">{value}</div>
-        {/each}
-      </div>
-    {:else if (element.value ?? '').length > 100}
-      <div class="w-full text-xs leading-relaxed">{element.value}</div>
-    {:else}
-      <div
-        class="shrink-0 text-right"
-        class:text-red-600={element.abnormal ?? false}
-      >
-        <div style="font-size: 1rem;">
-          {#if !!element.delta && element.delta != 0}
-            <Fa
-              icon={element.delta > 0 ? faArrowUp : faArrowDown}
-              class="inline mr-1 text-xs"
-            />
-          {/if}
-          {#if element.value == 'Yes'}<Fa
-              class="text-xl text-green-400"
-              icon={faCheckCircle}
-            />{:else if element.value == 'No'}<Fa
-              class="text-xl text-pink-400"
-              icon={faXmarkCircle}
-            />{:else}{element.value}{/if}
+    <div
+      class="{typeof element.value === 'string' && element.value.length > 100
+        ? 'py-3'
+        : 'flex items-center gap-2 py-1'} px-4"
+      style="min-height: 4rem;"
+      title={pastData.length == 0
+        ? ''
+        : `Click to ${expanded ? 'hide' : 'show'} recent values`}
+    >
+      <div class="flex-auto text-xs lg:text-sm">{element.name}</div>
+      {#if valueMissing}
+        <div class="shrink-0 text-right text-slate-500 text-sm">(missing)</div>
+      {:else if Array.isArray(element.value)}
+        <div class="text-right">
+          {#each element.value as value, i (value)}
+            <div class="text-sm">{value}</div>
+          {/each}
         </div>
-        {#if !!element.unit}
-          <div class="text-slate-500 text-xs">{element.unit}</div>
-        {/if}
-      </div>
-    {/if}
-  </div>
-  {#if expanded}
-    {#if pastData.length < 2}
-      <div class="w-full flex items-center justify-center h-24">
-        <div class="text-slate-600 text-sm">No prior data available.</div>
-      </div>
-    {:else}
-      <div class="w-full h-24 px-8 py-4">
-        <LayerCake
-          x="x"
-          y="y"
-          data={pastData}
-          padding={{ left: 4, bottom: 8 }}
-          xDomain={[pastData[0].x, pastData[pastData.length - 1].x]}
-          yDomain={ticks.length == 2 ? ticks : [0, 1]}
-          custom={{
-            hoveredGet: (d) => {
-              return d.i == hoveredIndex;
-            },
-          }}
+      {:else if (element.value ?? '').length > 100}
+        <div class="w-full text-xs leading-relaxed">{element.value}</div>
+      {:else}
+        <div
+          class="shrink-0 text-right"
+          class:text-red-600={element.abnormal ?? false}
         >
-          <Html pointerEvents={false}>
-            <ChartBackground class="bg-slate-100 rounded-md" inset={-4} />
-          </Html>
-          <Svg>
-            <!-- <ShadingX
+          <div style="font-size: 1rem;">
+            {#if !!element.delta && element.delta != 0}
+              <Fa
+                icon={element.delta > 0 ? faArrowUp : faArrowDown}
+                class="inline mr-1 text-xs"
+              />
+            {/if}
+            {#if element.value == 'Yes'}<Fa
+                class="text-xl text-green-400"
+                icon={faCheckCircle}
+              />{:else if element.value == 'No'}<Fa
+                class="text-xl text-pink-400"
+                icon={faXmarkCircle}
+              />{:else}{element.value}{/if}
+          </div>
+          {#if !!element.unit}
+            <div class="text-slate-500 text-xs">{element.unit}</div>
+          {/if}
+        </div>
+      {/if}
+    </div>
+    {#if expanded}
+      {#if pastData.length < 2}
+        <div class="w-full flex items-center justify-center h-24">
+          <div class="text-slate-600 text-sm">No prior data available.</div>
+        </div>
+      {:else}
+        <div class="w-full h-24 px-8 py-4">
+          <LayerCake
+            x="x"
+            y="y"
+            data={pastData}
+            padding={{ left: 4, bottom: 8 }}
+            xDomain={[pastData[0].x, pastData[pastData.length - 1].x]}
+            yDomain={ticks.length == 2 ? ticks : [0, 1]}
+            custom={{
+              hoveredGet: (d) => {
+                return d.i == hoveredIndex;
+              },
+            }}
+          >
+            <Html pointerEvents={false}>
+              <ChartBackground class="bg-slate-100 rounded-md" inset={-4} />
+            </Html>
+            <Svg>
+              <!-- <ShadingX
       highlightFn={(d) => suspectedMissingValue(d, true, false)}
       color={highlightImputedValues ? '#FF725C33' : 'transparent'}
       on:hover={(e) =>
@@ -218,50 +220,51 @@
         (hoveredSegment =
           e.detail != null && highlightHeldValues ? e.detail.i : null)}
     /> -->
-            <AxisX
-              gridlines={true}
-              tickMarks={false}
-              ticks={createXTicks(pastData)}
-              formatTick={(t) => formatTimeDelta(t, true)}
-              yTick={20}
-              color="#999"
-              snapTicks={true}
-            />
-            {#if dataBoolean}
-              <ShadingX
-                highlightFn={(d) => d.y}
-                padding={-8}
-                color="#3b82f6"
-                mergeSegments
-              />
-            {:else}
-              <AxisY
-                gridlines={false}
+              <AxisX
+                gridlines={true}
                 tickMarks={false}
-                {ticks}
-                formatTick={(t) => yAxisFormat(t)}
-                textAnchor="end"
-                dxTick={-4}
-                dyTick="0.5em"
+                ticks={createXTicks(pastData)}
+                formatTick={(t) => formatTimeDelta(t, true)}
+                yTick={20}
                 color="#999"
+                snapTicks={true}
               />
-              <Line stroke="#2563eb" />
-            {/if}
-            <ShadingX
-              highlightFn={(d) => true}
-              color="transparent"
-              on:hover={(e) =>
-                (hoveredIndex = e.detail != null ? e.detail.i : null)}
-            />
-          </Svg>
-          <Html pointerEvents={false}>
-            <ChartTooltip
-              formatText={(d) =>
-                `${formatTimeDelta(d.x)}: ${!!d.rawValue ? d.rawValue : 'missing'}`}
-            />
-          </Html>
-        </LayerCake>
-      </div>
+              {#if dataBoolean}
+                <ShadingX
+                  highlightFn={(d) => d.y}
+                  padding={-8}
+                  color="#3b82f6"
+                  mergeSegments
+                />
+              {:else}
+                <AxisY
+                  gridlines={false}
+                  tickMarks={false}
+                  {ticks}
+                  formatTick={(t) => yAxisFormat(t)}
+                  textAnchor="end"
+                  dxTick={-4}
+                  dyTick="0.5em"
+                  color="#999"
+                />
+                <Line stroke="#2563eb" />
+              {/if}
+              <ShadingX
+                highlightFn={(d) => true}
+                color="transparent"
+                on:hover={(e) =>
+                  (hoveredIndex = e.detail != null ? e.detail.i : null)}
+              />
+            </Svg>
+            <Html pointerEvents={false}>
+              <ChartTooltip
+                formatText={(d) =>
+                  `${formatTimeDelta(d.x)}: ${!!d.rawValue ? d.rawValue : 'missing'}`}
+              />
+            </Html>
+          </LayerCake>
+        </div>
+      {/if}
     {/if}
-  {/if}
-</a>
+  </a>
+{/if}

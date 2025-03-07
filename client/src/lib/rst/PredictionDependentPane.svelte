@@ -41,6 +41,7 @@
   };
   type TreatmentOutcomePrediction = {
     average: OutcomePrediction;
+    treatment_names: string[][];
     predictions: OutcomePrediction[];
     ground_truth?: string;
     severity_range: {
@@ -65,7 +66,7 @@
   // let visibleTarget: string = 'Mortality';
 
   let prediction: TreatmentOutcomePrediction | undefined;
-  let selectedPolicy: string[] = ['< 100 mL Fluids', 'None'];
+  let selectedPolicy: (string | null)[] = [null, null];
   let policyPrediction: OutcomePrediction | null = null;
   $: if (
     !!$patientData &&
@@ -76,16 +77,7 @@
       $patientData[`predictive_${shortName}_dependent`].timesteps![
         $timestepIndex
       ].data;
-    if (!!prediction) {
-      let maxPolicy = (
-        prediction.predictions.reduce(
-          (prev, curr) => (curr.sample_size > prev.sample_size ? curr : prev),
-          { sample_size: 0 }
-        ) as OutcomePrediction
-      ).policy;
-      if (!!maxPolicy) selectedPolicy = maxPolicy.map((p) => p.value);
-      else selectedPolicy = ['< 100 mL Fluids', 'None'];
-    }
+    selectedPolicy = [null, null];
   } else {
     prediction = undefined;
   }
@@ -120,6 +112,10 @@
           class="font-bold uppercase font-mono mr-2">Sepsis AI</span
         >
         Risk of {longName}
+        <Tooltip
+          hoverTargetClass="inline text-blue-700 hover:opacity-50 px-1"
+          title="This AI uses outcomes of similar patients to calculate the risk that your patient will {outcomeDescription} given the treatment plan you select."
+        />
       </div>
       {#if showSummary}
         <div class="text-sm">
@@ -142,54 +138,14 @@
     </div>
     {#if !collapsed}
       <div class="mt-2 flex gap-4 w-full items-start">
-        <div class="rounded-md bg-blue-100 p-4 flex flex-col gap-4 w-1/2">
-          <div class="text-sm">Select treatments:</div>
-          {#each ['Volume', 'Vasopressors'] as tx, i}
-            <div class="w-full">
-              <div
-                class="font-bold text-sm uppercase"
-                style="color: {colorSchemes[i][colorSchemes[i].length - 1]};"
-              >
-                {tx}
-              </div>
-              <div
-                class="mt-1 grid gap-2 w-full {TreatmentPolicyNames[tx].length %
-                  3 ==
-                0
-                  ? 'grid-cols-3'
-                  : 'grid-cols-2'}"
-              >
-                {#each TreatmentPolicyNames[tx] as policyVal, policyIdx}
-                  <button
-                    class="rounded-md py-2 px-4 text-xs {selectedPolicy[i] ==
-                    policyVal
-                      ? 'text-white font-bold'
-                      : 'bg-blue-50 hover:bg-blue-200'}"
-                    class:opacity-60={!prediction.predictions.find((p) =>
-                      p.policy?.every(
-                        (x, j) =>
-                          x.value == (j == i ? policyVal : selectedPolicy[j])
-                      )
-                    )}
-                    style={selectedPolicy[i] == policyVal
-                      ? `background-color: ${colorSchemes[i][colorSchemes[i].length - 1]};`
-                      : ''}
-                    disabled={selectedPolicy[i] == policyVal}
-                    on:click={() =>
-                      (selectedPolicy = [
-                        ...selectedPolicy.slice(0, i),
-                        policyVal,
-                        ...selectedPolicy.slice(i + 1),
-                      ])}>{policyVal}</button
-                  >
-                {/each}
-              </div>
-            </div>
-          {/each}
-        </div>
         <div class="flex-auto basis-0">
           <div class="measure">
-            {#if !!policyPrediction}
+            {#if selectedPolicy.some((p) => p === null)}
+              <span class="text-slate-600"
+                >Select treatments on the right to see the risk that the patient
+                will <strong>{outcomeDescription}</strong> if you give that treatment.</span
+              >
+            {:else if !!policyPrediction}
               This treatment plan was <Tooltip
                 title="{policyPrediction.sample_size}/100 similar patients"
                 ><span class="hoverable-text"
@@ -251,6 +207,49 @@
               >.
             </div>
           {/if}
+        </div>
+        <div class="rounded-md bg-blue-100 p-4 flex flex-col gap-4 w-1/2">
+          <div class="text-sm">Treatment options:</div>
+          {#each ['Volume', 'Vasopressors'] as tx, i}
+            <div class="w-full">
+              <div
+                class="font-bold text-sm uppercase"
+                style="color: {colorSchemes[i][colorSchemes[i].length - 1]};"
+              >
+                {tx}
+              </div>
+              <div class="mt-1 grid gap-2 w-full grid-cols-1">
+                {#each TreatmentPolicyNames[tx] as policyVal, policyIdx}
+                  <button
+                    class="rounded-md py-2 px-4 text-xs {selectedPolicy[i] ==
+                    policyVal
+                      ? 'text-white font-bold'
+                      : 'bg-blue-50 hover:bg-blue-200'}"
+                    class:opacity-60={selectedPolicy.every(
+                      (s, pi) => pi == i || s !== null
+                    ) &&
+                      !prediction.predictions.find((p) =>
+                        p.policy?.every(
+                          (x, j) =>
+                            x.value == (j == i ? policyVal : selectedPolicy[j])
+                        )
+                      )}
+                    style={selectedPolicy[i] == policyVal
+                      ? `background-color: ${colorSchemes[i][colorSchemes[i].length - 1]};`
+                      : ''}
+                    on:click={() =>
+                      (selectedPolicy = [
+                        ...selectedPolicy.slice(0, i),
+                        selectedPolicy[i] == policyVal ? null : policyVal,
+                        ...selectedPolicy.slice(i + 1),
+                      ])}
+                    >{prediction.treatment_names?.[i]?.[policyIdx] ??
+                      policyVal}</button
+                  >
+                {/each}
+              </div>
+            </div>
+          {/each}
         </div>
       </div>
       {#if showGroundTruth && !!prediction.ground_truth}

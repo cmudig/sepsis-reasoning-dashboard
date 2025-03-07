@@ -12,8 +12,10 @@
   import DataElementView from './DataElementView.svelte';
 
   export let section: string | null = null;
+  export let title: string | null = null;
   export let filterable: boolean = false;
   export let height: any | null = null;
+  export let studyEnvironment: boolean = false;
 
   let patientData: Writable<PatientData> = getContext('patientData');
   let timestepIndex: Writable<number> = getContext('timestepIndex');
@@ -42,9 +44,6 @@
   } else {
     visibleDataElements = dataElements;
   }
-
-  let groupElements: DataElementGroup[] = [];
-  $: if (groupElements.length > 0) groupElements[0].expand();
 </script>
 
 {#if !!dataElements && dataElements.length > 0 && !!$sectionData}
@@ -55,13 +54,13 @@
     <div
       class="py-2 font-bold shrink-0 text-slate-700 flex items-center gap-2 justify-between"
     >
-      <div class="flex-auto shrink-0 py-1">{section}</div>
+      <div class="flex-auto shrink-0 py-1">{title ?? section}</div>
       {#if filterable}
         <input
           type="text"
           class="font-normal flat-text-input-sm w-32"
           bind:value={filterText}
-          placeholder="Filter..."
+          placeholder="Search"
         />
       {/if}
     </div>
@@ -69,14 +68,16 @@
       {#if !!visibleDataElements}
         {#each visibleDataElements as element, i (element.name ?? i)}
           {#if element.children}
-            <DataElementGroup
-              name={element.name}
-              dataElements={element.children}
-              {filterText}
-              collapsed={!filterText}
-              basePath={[element.name]}
-              bind:this={groupElements[i]}
-            />
+            {#if !studyEnvironment || !(element.hide_in_study ?? false)}
+              <DataElementGroup
+                name={element.name}
+                dataElements={element.children}
+                {filterText}
+                collapsed={!filterText}
+                basePath={[element.name]}
+                {studyEnvironment}
+              />
+            {/if}
           {:else}
             <DataElementView
               {element}
@@ -85,6 +86,7 @@
                 $timestepIndex,
                 [element.name]
               )}
+              {studyEnvironment}
             />
           {/if}
         {/each}

@@ -7,9 +7,12 @@
   import StudyAds from './StudyADS.svelte';
   import {
     faBedPulse,
+    faChevronLeft,
     faRightFromBracket,
+    faUndo,
   } from '@fortawesome/free-solid-svg-icons';
   import Fa from 'svelte-fa';
+  import { formatText } from '../lib/utils/utils';
 
   let patientData: Writable<PatientData> = writable({});
   setContext('patientData', patientData);
@@ -87,21 +90,16 @@
   )
     currentPhase = Phase.cases;
 
+  let stimulusView: HTMLElement;
+
   function advanceStimulus() {
     stimulusIndex++;
     showingPostStimulusQuestions = false;
     if (stimulusIndex == allPatients.length) {
       currentPhase = Phase.debrief;
+    } else if (!!stimulusView) {
+      stimulusView.scrollTo({ top: 0, behavior: 'smooth' });
     }
-  }
-
-  function formatText(text: string): string {
-    return text
-      .replaceAll(
-        /\*\*([^*]*)\*\*\n/g,
-        '<div style="font-weight: bold; margin-top: 12px;">$1</div>'
-      )
-      .replaceAll('\n', '<br/>');
   }
 </script>
 
@@ -109,7 +107,7 @@
   <div
     class="w-full h-12 grow-0 shrink-0 bg-slate-700 flex py-2 px-4 items-center text-white"
   >
-    <div class="font-bold">Sepsis Reasoning Study</div>
+    <div class="font-bold">Decision-Making in Sepsis</div>
     <div class="flex-auto" />
     {#if !!studyProtocol && studyProtocol.dev_mode}
       <div
@@ -119,6 +117,13 @@
       </div>
     {/if}
     {#if !!currentStimulus && currentPhase >= Phase.cases}
+      <button
+        class="px-2 font-bold text-white hover:opacity-50 disabled:opacity-30"
+        disabled={stimulusIndex == 0}
+        on:click={() => {
+          if (confirm('Are you sure you want to go back?')) stimulusIndex--;
+        }}><Fa icon={faUndo} class="inline mr-1" /> Go Back</button
+      >
       <div class="mx-2">
         Patient {stimulusIndex + 1} of {studyProtocol?.patients.length}
       </div>
@@ -133,34 +138,51 @@
         <div class="w-1/2 max-w-full" style="min-width: 600px;">
           <div class="py-4">
             You have now completed the decision-making portion of the study.
-            Below you can see the different Sepsis AI interfaces that were shown
-            to you for each patient.
+            Below you can see all of the patients and Sepsis AI interfaces that
+            were shown to you.
           </div>
           <div class="pb-4">
             {#each studyProtocol.patients as patient, i}
-              {#if patient.ads != 'none'}
-                <div class="pt-2 border-t border-slate-400 mt-2">
-                  <StudyAds
-                    currentStimulus={patient}
-                    showPrompt={false}
-                    {studyProtocol}
-                    patientData={writable(allPatients[i])}
-                    timestepIndex={writable(patient.ts)}
-                  />
-                </div>
-              {/if}
+              <div class="pt-2 border-t border-slate-400 mt-2">
+                <StudyAds
+                  currentStimulus={patient}
+                  showPrompt={false}
+                  {studyProtocol}
+                  patientData={writable(allPatients[i])}
+                  timestepIndex={writable(patient.ts)}
+                />
+              </div>
             {/each}
           </div>
         </div>
       </div>
     {:else if currentPhase == Phase.cases}
-      <div class="h-full w-1/4 px-4 overflow-hidden">
-        <DataElementPane section="Demographics" />
+      <div class="flex flex-col w-1/4 px-4 gap-4">
+        <div class="shrink-0 w-full pt-4">
+          <div class="flex items-center w-full gap-2">
+            <div class="font-bold shrink-0">
+              <span class="text-slate-600">Hour</span>
+              {($timestepIndex + 1) * 4}
+              <span class="text-slate-600">in the ICU</span>
+            </div>
+          </div>
+        </div>
+        <div class="flex-auto h-0 w-full overflow-hidden">
+          <DataElementPane section="Demographics" studyEnvironment />
+        </div>
       </div>
       <div class="h-full w-1/4 pr-4 overflow-hidden">
-        <DataElementPane section="State" filterable />
+        <DataElementPane
+          section="State"
+          title="Patient Data"
+          filterable
+          studyEnvironment
+        />
       </div>
-      <div class="border-l border-slate-400 p-4 h-full w-1/2 overflow-y-auto">
+      <div
+        class="border-l border-slate-400 p-4 h-full w-1/2 overflow-y-auto"
+        bind:this={stimulusView}
+      >
         <StudyAds
           {currentStimulus}
           {studyProtocol}
@@ -168,16 +190,15 @@
           {timestepIndex}
         />
         {#if !!currentStimulus}
-          <div class="flex items-center justify-center w-full p-4">
+          <div class="flex items-center justify-center w-full p-4 gap-2">
+            <div>Describe your recommendation verbally, then</div>
             <button
               class="btn btn-blue max-w-full"
               on:click={(e) => {
                 if (!!studyProtocol?.text?.post_patient_items) {
                   showingPostStimulusQuestions = true;
                 } else advanceStimulus();
-              }}
-              >Describe your recommendation verbally, then click here to
-              continue</button
+              }}>Click Here to Continue</button
             >
           </div>
         {/if}
@@ -219,12 +240,29 @@
       </div>
     {/if}
     {#if (showingPostStimulusQuestions || currentPhase == Phase.intro || currentPhase == Phase.consent || currentPhase == Phase.pre_survey) && !!studyProtocol}
+      <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
       <div
         class="w-full h-full absolute top-0 left-0 bg-black/60 flex items-center justify-center"
+        on:click={showingPostStimulusQuestions
+          ? () => (showingPostStimulusQuestions = false)
+          : undefined}
+        on:keypress={showingPostStimulusQuestions
+          ? (e) => {
+              if (e.key === 'Escape') showingPostStimulusQuestions = false;
+            }
+          : undefined}
+        role="region"
+        aria-label="Click to dismiss"
+        tabindex="-1"
       >
+        <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
         <div
           class="w-1/2 p-8 rounded-md bg-white flex flex-col"
           style="min-width: 400px; max-height: 70%;"
+          on:click|stopPropagation={() => {}}
+          on:keypress={(e) => {}}
+          role="region"
+          tabindex="-1"
         >
           {#if currentPhase == Phase.intro}
             <div class="flex-auto min-h-0 overflow-y-auto">
@@ -240,15 +278,14 @@
                 </div>
               </div>
               <div class="mb-4">
-                During some of the cases, you may see a box labeled Sepsis AI
+                During some of the cases, you may see a box labeled "Sepsis AI"
                 with supporting information. This information comes from an AI
                 system that was trained on a database of over 14,000 patients to
                 identify similar patients to the one you're treating. It is
                 designed to give you information about what happened to those
                 prior patients to help you make your recommendation. This model
-                has been validated by expert clinicians at UPMC, and the
-                information it provides is generally accurate, though it can
-                make mistakes.
+                has been validated by expert clinicians, and the information it
+                provides is generally accurate.
               </div>
             </div>
             <div class="flex items-center justify-center w-full pt-4 shrink-0">
@@ -282,7 +319,7 @@
           {:else if currentPhase == Phase.consent}
             <div class="flex-auto min-h-0 overflow-y-auto">
               <div class="mb-4 font-bold">
-                Sepsis Reasoning Study: Informed Consent
+                Decision-Making in Sepsis: Informed Consent
               </div>
               <div class="mb-4">
                 {@html formatText(studyProtocol?.text.consent ?? '')}
@@ -297,7 +334,18 @@
               >
             </div>
           {:else}
+            <div class="mb-4">
+              <button
+                class="hover:opacity-50 text-blue-500"
+                on:click={() => (showingPostStimulusQuestions = false)}
+              >
+                <Fa icon={faChevronLeft} class="inline mr-2" /> Back
+              </button>
+            </div>
             <div class="overflow-y-auto min-h-0 flex-auto">
+              <div class="mb-4 text-sm">
+                Please verbally answer the following questions.
+              </div>
               {#each studyProtocol?.text?.post_patient_items ?? [] as item}
                 {#if !(item.ads_only ?? false) || currentStimulus?.ads != 'none'}
                   <div class="mb-8">

@@ -1,14 +1,44 @@
 import numpy as np
+
+def fluid_long_names(treatment_index, last_treatment=None):
+    if treatment_index == 0:
+        if last_treatment in (1, 2):
+            return "stop IV fluids"
+        elif last_treatment == 3:
+            return "stop diuretics"
+        return "give neither IV fluid nor diuretics"
+    if treatment_index in (1, 2):
+        fluid_str = "100 mL to 1 L of IV fluid" if treatment_index == 1 else "more than 1 L of IV fluid"
+        if last_treatment == 3:
+            return "stop diuretics and give " + fluid_str
+        return "give " + fluid_str
+    if treatment_index == 3:
+        if last_treatment in (1, 2):
+            return "stop IV fluids and give diuretics"
+        return "give diuretics"
+    return "unknown"
+
+def vasopressor_long_names(treatment_index, last_treatment=None):
+    if treatment_index == 0:
+        if last_treatment in (1, 2):
+            return "wean all vasopressors"
+        return "not give vasopressors"
+    if treatment_index == 1:
+        if last_treatment == 2:
+            return "wean secondary vasopressors"
+        return "give one vasopressor"
+    if treatment_index == 2:
+        if last_treatment == 1:
+            return "add another vasopressor"
+        return "give multiple vasopressors"
+    return "unknown"
+
 TREATMENT_INFO = (
     {
         "num_actions": 4, 
         "name": "Volume", 
         "inconsistent_label": "choose inconsistent IV fluid strategies", 
-        "long_names": [
-            "administer less than 100 mL of IV fluid",
-            "administer 100 mL to 1 L of IV fluid",
-            "administer more than 1 L of IV fluid",
-            "administer diuretics"],
+        "long_names": fluid_long_names,
         "short_names": [
             "< 100 mL Fluids",
             "100 mL - 1 L Fluids",
@@ -19,10 +49,7 @@ TREATMENT_INFO = (
         "num_actions": 3, 
         "name": "Vasopressors", 
         "inconsistent_label": "choose inconsistent vasopressor strategies", 
-        "long_names": [
-            "not administer vasopressors",
-            "administer one vasopressor",
-            "administer multiple vasopressors"],
+        "long_names": vasopressor_long_names,
         "short_names": [
             "None",
             "One",

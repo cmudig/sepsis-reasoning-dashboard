@@ -8,7 +8,7 @@ class PrescriptivePeerInformation:
         self.severity_cutoffs = severity_cutoffs
         self.min_consistent_probability = min_consistent_probability
         
-    def get_recommendation(self, neighbor_idxs, severity_quantile=None, true_treatment=None):
+    def get_recommendation(self, neighbor_idxs, severity_quantile=None, true_treatment=None, last_treatment=None):
         """
         :param neighbor_idxs: Indexes of the nearest neighbors to the point of interest
             in the training set.
@@ -20,7 +20,7 @@ class PrescriptivePeerInformation:
         """
         neighbor_treatments = tuple(np.take(self.train_treatments[:,i], neighbor_idxs)
                                 for i in range(self.train_treatments.shape[1]))
-        def make_probability_rep(actions, idx):
+        def make_probability_rep(actions, idx, last):
             num_actions = TREATMENT_INFO[idx]["num_actions"]
             inconsistent_msg = TREATMENT_INFO[idx]["inconsistent_label"]
             long_names = TREATMENT_INFO[idx]["long_names"]
@@ -42,7 +42,7 @@ class PrescriptivePeerInformation:
             return {
                 **result,
                 "consistent": True,
-                "choice": long_names[np.argmax(probs)],
+                "choice": long_names(np.argmax(probs), last),
                 "choice_idx": np.argmax(probs),
                 "choice_prob": probs.max()
             }
@@ -50,9 +50,9 @@ class PrescriptivePeerInformation:
         return {
             "prediction": [
                 {"tx": "Volume",
-                "pred": make_probability_rep(neighbor_treatments[0], 0)},
+                "pred": make_probability_rep(neighbor_treatments[0], 0, last_treatment[0] if last_treatment is not None else None)},
                 {"tx": "Vasopressors",
-                "pred": make_probability_rep(neighbor_treatments[1], 1)},
+                "pred": make_probability_rep(neighbor_treatments[1], 1, last_treatment[1] if last_treatment is not None else None)},
             ],
             **({"ground_truth": [
                 {"tx": "Volume",
@@ -80,7 +80,7 @@ class PrescriptiveOutcomeInformation:
         self.train_treatments = train_treatments
         self.severity_cutoffs = severity_cutoffs
 
-    def get_recommendation(self, neighbor_idxs, severity_quantile=None, true_treatment=None):
+    def get_recommendation(self, neighbor_idxs, severity_quantile=None, true_treatment=None, last_treatment=None):
         """
         :param neighbor_idxs: Indexes of the nearest neighbors to the point of interest
             in the training set.
@@ -125,8 +125,8 @@ class PrescriptiveOutcomeInformation:
             "recommendation": [{
                 "tx": info["name"], 
                 "value": info["short_names"][v], 
-                "description": info["long_names"][v]
-            } for info, v in zip(TREATMENT_INFO, best_policy)],
+                "description": info["long_names"](v, last)
+            } for info, v, last in zip(TREATMENT_INFO, best_policy, last_treatment if last_treatment is not None else [None] * len(best_policy))],
             "sample_size": all_predictions[best_policy][1],
             **({"ground_truth": [
                 {"tx": info["name"], "label": info["short_names"][v]}
