@@ -27,6 +27,8 @@
   export let showPrompt: boolean = true;
 
   let vignetteExpanded: boolean = false;
+
+  $: if (!!currentStimulus) vignetteExpanded = false;
 </script>
 
 {#if !!currentStimulus && !!studyProtocol}

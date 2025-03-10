@@ -13,6 +13,7 @@
   } from '@fortawesome/free-solid-svg-icons';
   import Fa from 'svelte-fa';
   import { formatText } from '../lib/utils/utils';
+  import { dispatch } from 'd3';
 
   let patientData: Writable<PatientData> = writable({});
   setContext('patientData', patientData);
@@ -98,7 +99,7 @@
     if (stimulusIndex == allPatients.length) {
       currentPhase = Phase.debrief;
     } else if (!!stimulusView) {
-      stimulusView.scrollTo({ top: 0, behavior: 'smooth' });
+      setTimeout(() => stimulusView.scrollTo({ top: 0, behavior: 'smooth' }));
     }
   }
 </script>
@@ -190,7 +191,9 @@
           {timestepIndex}
         />
         {#if !!currentStimulus}
-          <div class="flex items-center justify-center w-full p-4 gap-2">
+          <div
+            class="flex items-center justify-center w-full p-4 gap-2 flex-wrap whitespace-nowrap"
+          >
             <div>Describe your recommendation verbally, then</div>
             <button
               class="btn btn-blue max-w-full"
