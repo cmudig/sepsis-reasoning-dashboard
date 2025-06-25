@@ -37,7 +37,7 @@ with storage_client.bucket(BUCKET_NAME).blob('meta.json').open('r') as f:
 app = Flask(__name__, template_folder=FRONTEND_BUILD_DIR)
 csrf = CSRFProtect(app)
 
-app.config['LOGIN_DISABLED'] =  (os.environ.get("LOGIN_DISABLED") == "1" or not PRODUCTION_MODE)
+app.config['LOGIN_DISABLED'] = (os.environ.get("LOGIN_DISABLED") == "1" or not PRODUCTION_MODE)
 
 # Read secret key from secret.txt if available, otherwise fallback (dev only)
 if os.path.exists("secret.txt"):
@@ -220,7 +220,7 @@ def get_study_protocol():
     else:
         with condition_ordering_path.open('r') as f:
             condition_ordering = json.load(f)
-
+    
     if current_user.is_authenticated:
         user_id = current_user.get_id()
         print("User ID:", user_id)
@@ -247,14 +247,5 @@ def get_study_protocol():
     })
     
     
-@app.route('/condition_order', methods=['GET'])
-def get_condition_order():
-    global condition_ordering
-    with storage_client.bucket(BUCKET_NAME).blob(f'study_protocol.json').open('r') as f:
-        study_protocol = json.load(f)
-    if not condition_ordering:
-        condition_ordering = make_participant_assignments([p["ads_ids"] for p in study_protocol["patients"]])
-    return jsonify()
-
 if __name__ == "__main__":
     app.run(debug=True, port=4999)

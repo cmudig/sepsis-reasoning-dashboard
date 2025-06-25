@@ -1,7 +1,7 @@
 <script lang="ts">
   import { getContext } from 'svelte';
   import type { Writable } from 'svelte/store';
-  import type { PatientData } from '../patientdata';
+  import type { Explanation, PatientData } from '../patientdata';
   import Fa from 'svelte-fa';
   import {
     faBedPulse,
@@ -12,6 +12,7 @@
   import * as d3 from 'd3';
   import CategoryBar from '../charts/CategoryBar.svelte';
   import Tooltip from '../utils/Tooltip.svelte';
+  import ExplanationGrid from './ExplanationGrid.svelte';
 
   export let shortName: string = '';
   export let longName: string = '';
@@ -20,6 +21,8 @@
   export let showGroundTruth: boolean = true;
   export let showSummary: boolean = true;
   export let collapsible: boolean = true;
+  export let showExplanation: boolean = true;
+  let explanationCollapsed: boolean = true;
 
   export let collapsed: boolean = collapsible;
   $: if (!collapsible) collapsed = false;
@@ -48,6 +51,7 @@
       min: number;
       max: number;
     };
+    explanation?: Explanation[];
   };
 
   const TreatmentPolicyNames: { [key: string]: string[] } = {
@@ -255,6 +259,29 @@
       {#if showGroundTruth && !!prediction.ground_truth}
         <div class="mt-4 text-sm text-blue-700">
           Ground truth: <strong>{prediction.ground_truth}</strong>
+        </div>
+      {/if}
+      {#if showExplanation && !!policyPrediction}
+        <div class="rounded-md border border-blue-200 p-4 my-4 bg-white">
+          <button
+            class="flex items-center w-full gap-2 text-left hover:opacity-50"
+            on:click={() => (explanationCollapsed = !explanationCollapsed)}
+          >
+            <Fa
+              icon={explanationCollapsed ? faChevronRight : faChevronDown}
+              class="text-sm"
+            />
+            <div class="italic">Why is Sepsis AI making this prediction?</div>
+          </button>
+          {#if !explanationCollapsed}
+            <div class="mt-4 text-sm measure">
+              This prediction is based on 100 patients considered by the AI
+              system to be similar to this one, incorporating all of the data in
+              the left part of the interface. The displayed risk indicates the
+              rate of <strong>{longName.toLocaleLowerCase()}</strong> among patients
+              that received the treatment plan you select over the next 4 hours.
+            </div>
+          {/if}
         </div>
       {/if}
     {/if}

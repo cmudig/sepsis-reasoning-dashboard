@@ -45,13 +45,13 @@
 
   enum Panes {
     all = 'All',
-    descriptive = 'Similar/Different Features',
-    predictive_short_independent = 'Vasopressor Requirement Simple',
-    predictive_long_independent = 'Mortality Simple',
-    predictive_short_dependent = 'Vasopressor Requirement Interactive',
-    predictive_long_dependent = 'Mortality Interactive',
-    prescriptive_peer = 'Clinician Treatment Rec',
-    prescriptive_outcome = 'Mortality Treatment Rec',
+    descriptive = 'Descriptive',
+    predictive_short_independent = 'Predictive Short-Term Independent',
+    predictive_long_independent = 'Predictive Long-Term Independent',
+    predictive_short_dependent = 'Predictive Short-Term Dependent',
+    predictive_long_dependent = 'Predictive Long-Term Dependent',
+    prescriptive_peer = 'Prescriptive Peer',
+    prescriptive_outcome = 'Prescriptive Outcome',
   }
   let visiblePane: Panes = Panes.descriptive;
 

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { getContext } from 'svelte';
   import type { Writable } from 'svelte/store';
-  import type { PatientData } from '../patientdata';
+  import type { Explanation, PatientData } from '../patientdata';
   import Fa from 'svelte-fa';
   import {
     faBedPulse,
@@ -13,10 +13,13 @@
   import DescriptivePane from './DescriptivePane.svelte';
   import CategoryBar from '../charts/CategoryBar.svelte';
   import Tooltip from '../utils/Tooltip.svelte';
+  import ExplanationGrid from './ExplanationGrid.svelte';
 
   export let showGroundTruth: boolean = true;
   export let showSummary: boolean = true;
   export let collapsible: boolean = true;
+  export let showExplanation: boolean = true;
+  let explanationCollapsed: boolean = true;
 
   export let collapsed: boolean = collapsible;
   $: if (!collapsible) collapsed = false;
@@ -45,6 +48,7 @@
       min: number;
       max: number;
     };
+    explanation?: Explanation[];
   };
 
   let patientData: Writable<PatientData> = getContext('patientData');
@@ -139,6 +143,31 @@
             <span class="font-bold">{gt.tx}</span>: {gt.label}
           </div>
         {/each}
+      {/if}
+      {#if showExplanation}
+        <div class="rounded-md border border-blue-200 p-4 my-4 bg-white">
+          <button
+            class="flex items-center w-full gap-2 text-left hover:opacity-50"
+            on:click={() => (explanationCollapsed = !explanationCollapsed)}
+          >
+            <Fa
+              icon={explanationCollapsed ? faChevronRight : faChevronDown}
+              class="text-sm"
+            />
+            <div class="italic">
+              Why is Sepsis AI making this recommendation?
+            </div>
+          </button>
+          {#if !explanationCollapsed}
+            <div class="mt-4 text-sm measure">
+              This recommendation is based on 100 patients considered by the AI
+              system to be similar to this one, incorporating all of the data in
+              the left part of the interface. Recommended treatments are based
+              on the actions most commonly taken by physicians for those
+              patients.
+            </div>
+          {/if}
+        </div>
       {/if}
     {/if}
   </div>

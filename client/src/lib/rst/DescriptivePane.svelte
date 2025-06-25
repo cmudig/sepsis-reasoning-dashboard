@@ -1,7 +1,7 @@
 <script lang="ts">
   import { getContext } from 'svelte';
   import type { Writable } from 'svelte/store';
-  import type { PatientData } from '../patientdata';
+  import type { Explanation, PatientData } from '../patientdata';
   import Fa from 'svelte-fa';
   import {
     faBedPulse,
@@ -10,20 +10,15 @@
     faChevronUp,
   } from '@fortawesome/free-solid-svg-icons';
   import * as d3 from 'd3';
-  import DescriptivePane from './DescriptivePane.svelte';
   import Tooltip from '../utils/Tooltip.svelte';
+  import ExplanationGrid from './ExplanationGrid.svelte';
 
   export let colorScale = d3.interpolateTurbo;
 
-  type Explanation = {
-    feature: string;
-    value: string;
-    base_rate: string;
-    group_rate: string;
-  };
-
   export let showSummary: boolean = true;
   export let collapsible: boolean = true;
+  export let showExplanation: boolean = true;
+  let explanationCollapsed: boolean = true;
 
   export let collapsed: boolean = collapsible;
   $: if (!collapsible) collapsed = false;
@@ -72,32 +67,40 @@
         of other patients that often share these features:
       </div>
 
-      <div class="flex items-stretch gap-4 mt-4">
-        {#each explanation.similar as expFeature}
-          <div
-            class="rounded bg-blue-100 p-4 flex-auto basis-1 text-center text-sm"
-          >
-            <div class="font-bold">{expFeature.feature}</div>
-            <div>{expFeature.value}</div>
-          </div>
-        {/each}
-      </div>
+      <ExplanationGrid explanation={explanation.similar} />
 
       <div class="mt-2 measure">
         Meanwhile, this patient could be <strong>unusual</strong> because of the
         following features:
       </div>
 
-      <div class="flex items-stretch gap-4 mt-4">
-        {#each explanation.different as expFeature}
-          <div
-            class="rounded bg-blue-100 p-4 flex-auto basis-1 text-center text-sm"
+      <ExplanationGrid explanation={explanation.different} />
+      {#if showExplanation}
+        <div class="rounded-md border border-blue-200 p-4 my-4 bg-white">
+          <button
+            class="flex items-center w-full gap-2 text-left hover:opacity-50"
+            on:click={() => (explanationCollapsed = !explanationCollapsed)}
           >
-            <div class="font-bold">{expFeature.feature}</div>
-            <div>{expFeature.value}</div>
-          </div>
-        {/each}
-      </div>
+            <Fa
+              icon={explanationCollapsed ? faChevronRight : faChevronDown}
+              class="text-sm"
+            />
+            <div class="italic">
+              Why is Sepsis AI highlighting these features?
+            </div>
+          </button>
+          {#if !explanationCollapsed}
+            <div class="mt-4 text-sm measure">
+              The AI system compared this patient's data to data from 100 other
+              patients considered by the AI to be similar to this one,
+              incorporating all of the data in the left part of the interface.
+              Features rated as "similar" are more common in this patient group
+              relative to average patients, while features rated as "unusual"
+              are true in this patient but rare among similar patients.
+            </div>
+          {/if}
+        </div>
+      {/if}
     {/if}
   </div>
 {/if}

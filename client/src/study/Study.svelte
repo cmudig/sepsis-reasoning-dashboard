@@ -55,6 +55,7 @@
     loadingPatient = true;
     try {
       studyProtocol = await (await fetch('/study_protocol')).json();
+      console.log('study protocol:', studyProtocol);
       currentPhase = Phase.consent;
       allPatients = await Promise.all(
         studyProtocol!.patients.map(

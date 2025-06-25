@@ -21,3 +21,5 @@ __pycache__/
 client/node_modules
 modeling
 *.ipynb
+
+data_analysis

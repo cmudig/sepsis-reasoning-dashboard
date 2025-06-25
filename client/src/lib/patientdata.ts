@@ -60,3 +60,10 @@ export function getHistoricalPatientData(
           ?.find((e) => e.name == path[path.length - 1]) ?? null,
     }));
 }
+
+export type Explanation = {
+  feature: string;
+  value: string;
+  base_rate: string;
+  group_rate: string;
+};

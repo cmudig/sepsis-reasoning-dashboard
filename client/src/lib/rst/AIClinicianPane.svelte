@@ -1,7 +1,7 @@
 <script lang="ts">
   import { getContext } from 'svelte';
   import type { Writable } from 'svelte/store';
-  import type { PatientData } from '../patientdata';
+  import type { Explanation, PatientData } from '../patientdata';
   import Fa from 'svelte-fa';
   import {
     faBedPulse,
@@ -13,10 +13,13 @@
   import DescriptivePane from './DescriptivePane.svelte';
   import CategoryBar from '../charts/CategoryBar.svelte';
   import Tooltip from '../utils/Tooltip.svelte';
+  import ExplanationGrid from './ExplanationGrid.svelte';
 
   export let showGroundTruth: boolean = true;
   export let showSummary: boolean = true;
   export let collapsible: boolean = true;
+  export let showExplanation: boolean = true;
+  let explanationCollapsed: boolean = true;
 
   export let collapsed: boolean = collapsible;
   $: if (!collapsible) collapsed = false;
@@ -38,6 +41,7 @@
       min: number;
       max: number;
     };
+    explanation?: Explanation[];
   };
 
   let patientData: Writable<PatientData> = getContext('patientData');
@@ -92,8 +96,7 @@
           >{recommendation.recommendation[
             recommendation.recommendation.length - 1
           ].description}</strong
-        >. This recommendation is based on treatments for similar patients that
-        led to the lowest risk of mortality.
+        >.
       </div>
       {#if showGroundTruth && !!recommendation.ground_truth}
         <div class="mt-4 text-sm text-blue-700">Ground truth:</div>
@@ -106,6 +109,32 @@
             >: {gt.label}
           </div>
         {/each}
+      {/if}
+      {#if showExplanation}
+        <div class="rounded-md border border-blue-200 p-4 my-4 bg-white">
+          <button
+            class="flex items-center w-full gap-2 text-left hover:opacity-50"
+            on:click={() => (explanationCollapsed = !explanationCollapsed)}
+          >
+            <Fa
+              icon={explanationCollapsed ? faChevronRight : faChevronDown}
+              class="text-sm"
+            />
+            <div class="italic">
+              Why is Sepsis AI making this recommendation?
+            </div>
+          </button>
+          {#if !explanationCollapsed}
+            <div class="mt-4 text-sm measure">
+              This recommendation is based on 100 patients considered by the AI
+              system to be similar to this one, incorporating all of the data in
+              the left part of the interface. Out of the treatments that were
+              given to enough of these patients over the next 4 hours to get a
+              robust estimate, the ones that received the recommended treatment
+              had the lowest mortality.
+            </div>
+          {/if}
+        </div>
       {/if}
     {/if}
   </div>
