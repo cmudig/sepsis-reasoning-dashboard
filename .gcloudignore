@@ -23,3 +23,5 @@ modeling
 *.ipynb
 
 data_analysis
+sepsis_models
+data

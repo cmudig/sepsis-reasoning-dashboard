@@ -12,6 +12,7 @@ export default defineConfig({
         main: resolve(__dirname, 'index.html'),
         login: resolve(__dirname, 'login.html'),
         study: resolve(__dirname, 'study.html'),
+        embeddable: resolve(__dirname, 'embeddable.html'),
       },
     },
   },

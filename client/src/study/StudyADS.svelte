@@ -31,7 +31,7 @@
   $: if (!!currentStimulus) vignetteExpanded = false;
 </script>
 
-{#if !!currentStimulus && !!studyProtocol}
+{#if !!currentStimulus}
   <div class="mb-2 font-bold">{currentStimulus.pseudonym}</div>
   <div
     class="mb-2 leading-relaxed text-sm"

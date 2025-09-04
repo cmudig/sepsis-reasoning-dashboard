@@ -26,6 +26,8 @@ BUCKET_DIRECTORIES = [
     "prescriptive_outcome"
 ]
 
+OPEN_DATASETS = ["weighted"] # temporary: change this to the study-specific datasets
+
 # Initialize GCS client
 storage_client = storage.Client()
 
@@ -61,6 +63,10 @@ def base():
 @login_required
 def study():
     return render_template('study.html')
+
+@app.route("/embeddable")
+def embeddable():
+    return render_template('embeddable.html')
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -100,12 +106,13 @@ def load_user(user_id):
 
 @app.route('/dataset', methods=['GET'])
 def get_datasets():
-    if not app.config['LOGIN_DISABLED'] and not current_user.is_authenticated: return "Not authenticated", 403
+    if not app.config['LOGIN_DISABLED'] and not current_user.is_authenticated: 
+        return jsonify([d for d in datasets if d in OPEN_DATASETS])
     return jsonify(datasets)
 
 @app.route('/dataset/<dataset_name>/patient/<id>', methods=['GET'])
 def get_patient_files(dataset_name, id):
-    if not app.config['LOGIN_DISABLED'] and not current_user.is_authenticated: return "Not authenticated", 403
+    if not app.config['LOGIN_DISABLED'] and not current_user.is_authenticated and dataset_name not in OPEN_DATASETS: return "Not authenticated", 403
     result = {'data': {}}
     for directory in BUCKET_DIRECTORIES:
         # Construct the GCS file path
@@ -143,7 +150,7 @@ def get_patient_files(dataset_name, id):
 
 @app.route('/dataset/<dataset_name>/patient/random', methods=['GET'])
 def random_patient(dataset_name):
-    if not app.config['LOGIN_DISABLED'] and not current_user.is_authenticated: return "Not authenticated", 403
+    if not app.config['LOGIN_DISABLED'] and not current_user.is_authenticated and dataset_name not in OPEN_DATASETS: return "Not authenticated", 403
     global metadata
     if dataset_name not in metadata:
         # get metadata
@@ -209,7 +216,6 @@ def make_participant_assignments(ads_ids, num_ads=7, max_per_ads=2, num_to_gener
 
 @app.route('/study_protocol', methods=['GET'])
 def get_study_protocol():    
-    if not app.config['LOGIN_DISABLED'] and not current_user.is_authenticated: return "Not authenticated", 403
     with storage_client.bucket(BUCKET_NAME).blob(f'study_protocol.json').open('r') as f:
         study_protocol = json.load(f)
     condition_ordering_path = storage_client.bucket(BUCKET_NAME).blob(f'condition_ordering.json')
