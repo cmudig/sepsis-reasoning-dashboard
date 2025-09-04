@@ -58,7 +58,7 @@ class DataNormalization:
         return self._preprocess_normalized_data(MIMICzs)
     
     def inverse_transform(self, data):
-        as_is_scores = data[:,:len(self.as_is_columns)] + 0.5
+        as_is_scores = data[:,:len(self.as_is_columns)]
         no_norm_scores = data[:,len(self.as_is_columns):len(self.as_is_columns) + len(self.binary_columns)] + 0.5
         unnormed = self.scaler.inverse_transform(data[:,len(self.as_is_columns) + len(self.binary_columns):])
         unnormed[:,len(self.norm_columns):] = self._inverse_log_transform(unnormed[:,len(self.norm_columns):])

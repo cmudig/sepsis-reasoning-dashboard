@@ -91,7 +91,6 @@ class TimeSeriesAutoencoderTrainer:
                  mask_prob=0.05,
                  noise_factor=0.05,
                  checkpoint_path=None,
-                 change_lambda=0.0,
                  past_value_reconstruction=False,
                  first_value_reconstruction=False,
                 train_weights=None, val_weights=None, test_weights=None):
@@ -123,7 +122,7 @@ class TimeSeriesAutoencoderTrainer:
                                            device=self.device).to(self.device)
         self.past_value_reconstruction = past_value_reconstruction
         self.first_value_reconstruction = first_value_reconstruction
-        self.change_lambda = change_lambda
+        # self.change_lambda = change_lambda
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=lr, weight_decay=0.1)
         scheduler1 = torch.optim.lr_scheduler.LinearLR(self.optimizer, total_iters=n_warmup)
         scheduler2 = torch.optim.lr_scheduler.StepLR(self.optimizer, 1, gamma=lr_decay)
@@ -178,8 +177,8 @@ class TimeSeriesAutoencoderTrainer:
                     if self.first_value_reconstruction:
                         loss += self.mask_loss(self.criterion(preds[output_idx], torch.tile(inputs[:,0:1,:], (1, inputs.shape[1], 1))), 
                                                torch.tile(weights[:,0:1,:], (1, weights.shape[1], 1)), lengths)
-                    if self.change_lambda > 0:
-                        loss += self.change_lambda * torch.linalg.norm(inputs - torch.cat([torch.zeros(inputs.shape[0], 1, inputs.shape[2]), inputs[:,:-1,:]], 1), 2, 2)
+                    # if self.change_lambda > 0:
+                    #     loss += self.change_lambda * torch.linalg.norm(inputs - torch.cat([torch.zeros(inputs.shape[0], 1, inputs.shape[2]), inputs[:,:-1,:]], 1), 2, 2)
                 scaler.scale(loss).backward()
                 # torch.nn.utils.clip_grad_norm_(self.model.parameters(), 10.0)
                 scaler.step(self.optimizer)
