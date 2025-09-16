@@ -43,6 +43,8 @@
     document.title = `Sepsis AI | Patient ${visiblePatientID}`;
   }
 
+  let observer: ResizeObserver | undefined;
+
   onMount(async () => {
     currentDataset = initDataset;
     initDataset = null;
@@ -60,7 +62,30 @@
       visiblePatientID = null;
     }
     loadingPatient = false;
+
+    observer = new ResizeObserver(handleResize);
+
+    observer.observe(document.body);
   });
+
+  onDestroy(() => {
+    if (!!observer) {
+      observer.unobserve(document.body);
+      observer = undefined;
+    }
+  });
+
+  function handleResize() {
+    if (window.parent) {
+      window.parent.postMessage(
+        {
+          type: 'embeddable-resize',
+          height: document.body.scrollHeight,
+        },
+        'https://rst-viewer-dot-ai-clinician.ue.r.appspot.com'
+      );
+    }
+  }
 </script>
 
 <div>

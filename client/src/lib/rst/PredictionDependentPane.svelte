@@ -141,13 +141,14 @@
       {/if}
     </div>
     {#if !collapsed}
-      <div class="mt-2 flex gap-4 w-full items-start">
-        <div class="flex-auto basis-0">
+      <div class="mt-2 flex md:flex-nowrap flex-wrap gap-4 w-full items-start">
+        <div class="flex-auto w-full md:basis-0 md:order-first order-last">
           <div class="measure">
             {#if selectedPolicy.some((p) => p === null)}
               <span class="text-slate-600"
-                >Select treatments on the right to see the risk that the patient
-                will <strong>{outcomeDescription}</strong> if you give that treatment.</span
+                >Select treatments to see the risk that the patient will <strong
+                  >{outcomeDescription}</strong
+                > if you give that treatment.</span
               >
             {:else if !!policyPrediction}
               This treatment plan was <Tooltip
@@ -212,7 +213,9 @@
             </div>
           {/if}
         </div>
-        <div class="rounded-md bg-blue-100 p-4 flex flex-col gap-4 w-1/2">
+        <div
+          class="rounded-md bg-blue-100 p-4 flex flex-col gap-4 flex-auto w-full md:basis-1 md:w-1/2"
+        >
           <div class="text-sm">Treatment options:</div>
           {#each ['Volume', 'Vasopressors'] as tx, i}
             <div class="w-full">
