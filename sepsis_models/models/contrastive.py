@@ -258,11 +258,11 @@ class TimeSeriesContrastiveTrainer:
                         output_idx = 1
                         if self.same_trajectory_contrast_lambda > 0:
                             total_losses[output_idx] += (self.same_trajectory_contrast_lambda * 
-                                    self.same_trajectory_loss(preds, corrupted_preds, lengths))
+                                    self.same_trajectory_loss(preds, corrupted_preds, lengths)).item()
                             output_idx += 1
                         if self.other_trajectory_contrast_lambda > 0:
                             total_losses[output_idx] += (self.other_trajectory_contrast_lambda * 
-                                    self.other_trajectory_loss(preds, corrupted_preds, lengths))
+                                    self.other_trajectory_loss(preds, corrupted_preds, lengths)).item()
                             output_idx += 1
                         total_batches += 1
 
