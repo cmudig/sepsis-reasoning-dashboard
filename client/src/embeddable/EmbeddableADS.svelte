@@ -82,7 +82,7 @@
           type: 'embeddable-resize',
           height: document.body.scrollHeight,
         },
-        'https://rst-viewer-dot-ai-clinician.ue.r.appspot.com'
+        'https://cmu.yul1.qualtrics.com'
       );
     }
   }
@@ -90,79 +90,77 @@
 
 <div>
   {#if !!$patientData}
-    <div class="p-8">
-      {#if adsInterface == 'descriptive'}
-        <div class="mb-4">
-          <DescriptivePane collapsible={false} showSummary={false} />
-        </div>
-      {/if}
-      {#if adsInterface == 'predictive_vaso_independent'}
-        <div class="mb-4">
-          <PredictiveIndependentPane
-            shortName="vaso"
-            longName="Vasopressor Requirement"
-            outcomeDescription="require vasopressors after 12 hours"
-            collapsible={false}
-            showGroundTruth={false}
-            showSummary={false}
-          />
-        </div>
-      {/if}
-      {#if adsInterface == 'predictive_morta_independent'}
-        <div class="mb-4">
-          <PredictiveIndependentPane
-            shortName="morta"
-            longName="Mortality"
-            outcomeDescription="have a final discharge outcome of mortality"
-            collapsible={false}
-            showGroundTruth={false}
-            showSummary={false}
-          />
-        </div>
-      {/if}
-      {#if adsInterface == 'predictive_vaso_dependent'}
-        <div class="mb-4">
-          <PredictionDependentPane
-            shortName="vaso"
-            longName="Vasopressor Requirement"
-            outcomeDescription="require vasopressors after 12 hours"
-            collapsible={false}
-            showGroundTruth={false}
-            showSummary={false}
-          />
-        </div>
-      {/if}
-      {#if adsInterface == 'predictive_morta_dependent'}
-        <div class="mb-4">
-          <PredictionDependentPane
-            shortName="morta"
-            longName="Mortality"
-            outcomeDescription="have a final discharge outcome of mortality"
-            collapsible={false}
-            showGroundTruth={false}
-            showSummary={false}
-          />
-        </div>
-      {/if}
-      {#if adsInterface == 'prescriptive_peer'}
-        <div class="mb-4">
-          <PrescriptivePeerPane
-            collapsible={false}
-            showGroundTruth={false}
-            showSummary={false}
-          />
-        </div>
-      {/if}
-      {#if adsInterface == 'prescriptive_outcome'}
-        <div class="mb-4">
-          <AiClinicianPane
-            collapsible={false}
-            showGroundTruth={false}
-            showSummary={false}
-          />
-        </div>
-      {/if}
-    </div>
+    {#if adsInterface == 'descriptive'}
+      <div class="mb-4">
+        <DescriptivePane collapsible={false} showSummary={false} />
+      </div>
+    {/if}
+    {#if adsInterface == 'predictive_vaso_independent'}
+      <div class="mb-4">
+        <PredictiveIndependentPane
+          shortName="vaso"
+          longName="Vasopressor Requirement"
+          outcomeDescription="require vasopressors after 12 hours"
+          collapsible={false}
+          showGroundTruth={false}
+          showSummary={false}
+        />
+      </div>
+    {/if}
+    {#if adsInterface == 'predictive_morta_independent'}
+      <div class="mb-4">
+        <PredictiveIndependentPane
+          shortName="morta"
+          longName="Mortality"
+          outcomeDescription="have a final discharge outcome of mortality"
+          collapsible={false}
+          showGroundTruth={false}
+          showSummary={false}
+        />
+      </div>
+    {/if}
+    {#if adsInterface == 'predictive_vaso_dependent'}
+      <div class="mb-4">
+        <PredictionDependentPane
+          shortName="vaso"
+          longName="Vasopressor Requirement"
+          outcomeDescription="require vasopressors after 12 hours"
+          collapsible={false}
+          showGroundTruth={false}
+          showSummary={false}
+        />
+      </div>
+    {/if}
+    {#if adsInterface == 'predictive_morta_dependent'}
+      <div class="mb-4">
+        <PredictionDependentPane
+          shortName="morta"
+          longName="Mortality"
+          outcomeDescription="have a final discharge outcome of mortality"
+          collapsible={false}
+          showGroundTruth={false}
+          showSummary={false}
+        />
+      </div>
+    {/if}
+    {#if adsInterface == 'prescriptive_peer'}
+      <div class="mb-4">
+        <PrescriptivePeerPane
+          collapsible={false}
+          showGroundTruth={false}
+          showSummary={false}
+        />
+      </div>
+    {/if}
+    {#if adsInterface == 'prescriptive_outcome'}
+      <div class="mb-4">
+        <AiClinicianPane
+          collapsible={false}
+          showGroundTruth={false}
+          showSummary={false}
+        />
+      </div>
+    {/if}
   {/if}
   {#if loadingPatient}
     <div
