@@ -180,15 +180,15 @@ class TimeSeriesContrastiveTrainer:
         return corrupted
     
     def same_trajectory_loss(self, flat_preds, flat_corrupted_preds, lengths):
-        traj_idxs = self.flatten_by_trajectories(torch.tile(torch.arange(lengths.shape[0]).reshape(-1, 1), (1, lengths.max())), lengths)
-        seq_idxs = self.flatten_by_trajectories(torch.tile(torch.arange(lengths.max()), (lengths.shape[0], 1)), lengths)
+        traj_idxs = self.flatten_by_trajectories(torch.tile(torch.arange(lengths.shape[0]).reshape(-1, 1), (1, lengths.max())), lengths).to(self.device)
+        seq_idxs = self.flatten_by_trajectories(torch.tile(torch.arange(lengths.max()), (lengths.shape[0], 1)), lengths).to(self.device)
         return self.criterion(flat_preds,
                               flat_corrupted_preds,
                               torch.abs(seq_idxs.reshape(-1, 1) - seq_idxs.reshape(1, -1)) <= 1,
                               mask=traj_idxs.reshape(-1, 1) == traj_idxs.reshape(1, -1))
 
     def other_trajectory_loss(self, flat_preds, flat_corrupted_preds, lengths):
-        traj_idxs = self.flatten_by_trajectories(torch.tile(torch.arange(lengths.shape[0]).reshape(-1, 1), (1, lengths.max())), lengths)
+        traj_idxs = self.flatten_by_trajectories(torch.tile(torch.arange(lengths.shape[0]).reshape(-1, 1), (1, lengths.max())), lengths).to(self.device)
         return self.criterion(flat_preds,
                               flat_corrupted_preds,
                               traj_idxs.reshape(-1, 1) == traj_idxs.reshape(1, -1))
@@ -219,7 +219,7 @@ class TimeSeriesContrastiveTrainer:
                     preds = self.flatten_by_trajectories(self.model(inputs), lengths)
                     corrupted_preds = self.flatten_by_trajectories(self.model(corrupted), lengths)
                     
-                    loss = self.criterion(preds, corrupted_preds, torch.eye(preds.shape[0]))
+                    loss = self.criterion(preds, corrupted_preds, torch.eye(preds.shape[0]).to(self.device))
                     output_idx = 1
                     if self.same_trajectory_contrast_lambda > 0:
                         loss += (self.same_trajectory_contrast_lambda * 
@@ -254,7 +254,7 @@ class TimeSeriesContrastiveTrainer:
                         preds = self.flatten_by_trajectories(self.model(inputs), lengths)
                         corrupted_preds = self.flatten_by_trajectories(self.model(corrupted), lengths)
                         
-                        total_losses[0] += self.criterion(preds, corrupted_preds, torch.eye(preds.shape[0])).item()
+                        total_losses[0] += self.criterion(preds, corrupted_preds, torch.eye(preds.shape[0]).to(self.device)).item()
                         output_idx = 1
                         if self.same_trajectory_contrast_lambda > 0:
                             total_losses[output_idx] += (self.same_trajectory_contrast_lambda * 
