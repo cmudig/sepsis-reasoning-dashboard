@@ -170,8 +170,8 @@ class TimeSeriesAutoencoderTrainer:
                     loss = self.mask_loss(self.criterion(preds[0], inputs), weights, lengths)
                     output_idx = 1
                     if self.past_value_reconstruction:
-                        loss += self.mask_loss(self.criterion(preds[output_idx], torch.cat([torch.zeros(inputs.shape[0], 6, inputs.shape[2]), inputs[:,:-6,:]], 1)), 
-                                               torch.cat([torch.zeros(weights.shape[0], 6, weights.shape[2]), weights[:,:-6,:]], 1), 
+                        loss += self.mask_loss(self.criterion(preds[output_idx], torch.cat([torch.zeros(inputs.shape[0], 6, inputs.shape[2]).to(self.device), inputs[:,:-6,:]], 1)), 
+                                               torch.cat([torch.zeros(weights.shape[0], 6, weights.shape[2]).to(self.device), weights[:,:-6,:]], 1), 
                                                lengths, 6)
                         output_idx += 1
                     if self.first_value_reconstruction:
@@ -201,12 +201,13 @@ class TimeSeriesAutoencoderTrainer:
                     with torch.autocast(device_type=self.device, dtype=torch.bfloat16 if self.device == 'cpu' else torch.float16, enabled=use_amp):
                         inputs = inputs.to(self.device)
                         lengths = lengths.to(self.device)
+                        weights = weights.to(self.device)
                         preds = self.model(inputs)
                         total_losses[0] += self.mask_loss(self.criterion(preds[0], inputs), weights, lengths).item()
                         output_idx = 1
                         if self.past_value_reconstruction:
-                            total_losses[output_idx] += self.mask_loss(self.criterion(preds[output_idx], torch.cat([torch.zeros(inputs.shape[0], 6, inputs.shape[2]), inputs[:,:-6,:]], 1)), 
-                                                                       torch.cat([torch.zeros(weights.shape[0], 6, weights.shape[2]), weights[:,:-6,:]], 1), 
+                            total_losses[output_idx] += self.mask_loss(self.criterion(preds[output_idx], torch.cat([torch.zeros(inputs.shape[0], 6, inputs.shape[2]).to(self.device), inputs[:,:-6,:]], 1)), 
+                                                                       torch.cat([torch.zeros(weights.shape[0], 6, weights.shape[2]).to(self.device), weights[:,:-6,:]], 1), 
                                                                        lengths, 6)
                             output_idx += 1
                         if self.first_value_reconstruction:
