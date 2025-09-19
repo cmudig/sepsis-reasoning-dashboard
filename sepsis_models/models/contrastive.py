@@ -121,7 +121,6 @@ class TimeSeriesContrastiveTrainer:
         self.train_dataset = self.make_dataset(train_data,
                                                id_col=id_col,
                                                time_col=time_col,
-                                               mask_prob=mask_prob,
                                              weights=train_weights)
         self.val_dataset = self.make_dataset(val_data,
                                                id_col=id_col,
@@ -151,6 +150,8 @@ class TimeSeriesContrastiveTrainer:
         self.criterion = infonce_loss(temperature=infonce_temperature)
         self.checkpoint_path = checkpoint_path
         
+        self.mask_prob = mask_prob
+        
     def load_checkpoint(self):
         checkpoint = torch.load(self.checkpoint_path, map_location=self.device)
         self.model.load_state_dict(checkpoint['model'])
@@ -178,6 +179,10 @@ class TimeSeriesContrastiveTrainer:
             idxs_to_randomize = np.random.choice(all_possible_idxs.shape[0], size=int(self.corruption_rate * all_possible_idxs.shape[0]))
             idxs_to_swap = np.random.choice(all_possible_idxs.shape[0], size=int(self.corruption_rate * all_possible_idxs.shape[0]))
             corrupted[all_possible_idxs[idxs_to_randomize, 0], all_possible_idxs[idxs_to_randomize, 1], observation_dim] = inputs[all_possible_idxs[idxs_to_swap, 0], all_possible_idxs[idxs_to_swap, 1], observation_dim]
+            
+        if self.mask_prob > 0.0:
+            should_mask = torch.rand(corrupted.shape) < self.mask_prob
+            corrupted = torch.where(should_mask, 0.0, corrupted)
         return corrupted
     
     def same_trajectory_loss(self, flat_preds, flat_corrupted_preds, lengths):
