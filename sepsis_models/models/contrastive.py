@@ -109,7 +109,7 @@ class TimeSeriesContrastiveTrainer:
                  id_col="id", time_col="time",
                  architecture='transformer', nhead=4, nhid=128, nembed=32, 
                  nencoder=2, dropout=0.1, device='cpu', lr=5e-4,
-                 lr_decay=0.98, n_warmup=2, corruption_rate=0.2,
+                 lr_decay=0.98, n_warmup=2, corruption_rate=0.2, mask_prob=0.0,
                  infonce_temperature=0.07,
                  checkpoint_path=None,
                  same_trajectory_contrast_lambda=0.0,
@@ -121,6 +121,7 @@ class TimeSeriesContrastiveTrainer:
         self.train_dataset = self.make_dataset(train_data,
                                                id_col=id_col,
                                                time_col=time_col,
+                                               mask_prob=mask_prob,
                                              weights=train_weights)
         self.val_dataset = self.make_dataset(val_data,
                                                id_col=id_col,
