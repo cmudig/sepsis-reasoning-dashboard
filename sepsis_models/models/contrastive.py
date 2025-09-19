@@ -181,7 +181,7 @@ class TimeSeriesContrastiveTrainer:
             corrupted[all_possible_idxs[idxs_to_randomize, 0], all_possible_idxs[idxs_to_randomize, 1], observation_dim] = inputs[all_possible_idxs[idxs_to_swap, 0], all_possible_idxs[idxs_to_swap, 1], observation_dim]
             
         if self.mask_prob > 0.0:
-            should_mask = torch.rand(corrupted.shape) < self.mask_prob
+            should_mask = torch.rand(corrupted.shape).to(self.device) < self.mask_prob
             corrupted = torch.where(should_mask, 0.0, corrupted)
         return corrupted
     
