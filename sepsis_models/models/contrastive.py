@@ -104,6 +104,32 @@ def infonce_loss(temperature=0.07):
         return loss
     return loss_fn
     
+def barlow_twins_loss(lambda_bt=0.0051):
+    """
+    Computes the Barlow Twins loss for a batch of embeddings.
+    Args:
+        lambda_bt: Scaling factor for off-diagonal terms
+    Returns:
+        loss_fn: function(z_a, z_b) -> scalar loss
+    """
+    def loss_fn(z_a, z_b):
+        """
+        Args:
+            z_a: (N, D) embeddings from view 1
+            z_b: (N, D) embeddings from view 2
+        Returns:
+            Scalar Barlow Twins loss
+        """
+        N, D = z_a.size()
+        z_a_norm = (z_a - z_a.mean(0)) / (z_a.std(0) + 1e-9)
+        z_b_norm = (z_b - z_b.mean(0)) / (z_b.std(0) + 1e-9)
+        c = torch.mm(z_a_norm.T, z_b_norm) / N  # (D, D)
+        on_diag = torch.diagonal(c).add_(-1).pow_(2).sum()
+        off_diag = (c - torch.diag(torch.diagonal(c))).pow_(2).sum()
+        loss = on_diag + lambda_bt * off_diag
+        return loss
+    return loss_fn
+
 class TimeSeriesContrastiveTrainer:
     def __init__(self, train_data, val_data, test_data,
                  id_col="id", time_col="time",
@@ -111,6 +137,7 @@ class TimeSeriesContrastiveTrainer:
                  nencoder=2, dropout=0.1, device='cpu', lr=5e-4,
                  lr_decay=0.98, n_warmup=2, corruption_rate=0.2, mask_prob=0.0,
                  infonce_temperature=0.07,
+                 bt_lambda=0.01,
                  checkpoint_path=None,
                  same_trajectory_contrast_lambda=0.0,
                  other_trajectory_contrast_lambda=0.0,
@@ -147,7 +174,8 @@ class TimeSeriesContrastiveTrainer:
         scheduler2 = torch.optim.lr_scheduler.StepLR(self.optimizer, 1, gamma=lr_decay)
         self.scheduler = torch.optim.lr_scheduler.SequentialLR(self.optimizer, schedulers=[scheduler1, scheduler2], milestones=[n_warmup])
 
-        self.criterion = infonce_loss(temperature=infonce_temperature)
+        self.main_criterion = barlow_twins_loss(lambda_bt=bt_lambda)
+        self.aux_criterion = infonce_loss(temperature=infonce_temperature)
         self.checkpoint_path = checkpoint_path
         
         self.mask_prob = mask_prob
@@ -188,14 +216,14 @@ class TimeSeriesContrastiveTrainer:
     def same_trajectory_loss(self, flat_preds, flat_corrupted_preds, lengths):
         traj_idxs = self.flatten_by_trajectories(torch.tile(torch.arange(lengths.shape[0]).reshape(-1, 1), (1, lengths.max())), lengths).to(self.device)
         seq_idxs = self.flatten_by_trajectories(torch.tile(torch.arange(lengths.max()), (lengths.shape[0], 1)), lengths).to(self.device)
-        return self.criterion(flat_preds,
+        return self.aux_criterion(flat_preds,
                               flat_corrupted_preds,
                               torch.abs(seq_idxs.reshape(-1, 1) - seq_idxs.reshape(1, -1)) <= 1,
                               mask=traj_idxs.reshape(-1, 1) == traj_idxs.reshape(1, -1))
 
     def other_trajectory_loss(self, flat_preds, flat_corrupted_preds, lengths):
         traj_idxs = self.flatten_by_trajectories(torch.tile(torch.arange(lengths.shape[0]).reshape(-1, 1), (1, lengths.max())), lengths).to(self.device)
-        return self.criterion(flat_preds,
+        return self.aux_criterion(flat_preds,
                               flat_corrupted_preds,
                               traj_idxs.reshape(-1, 1) == traj_idxs.reshape(1, -1))
         
@@ -225,7 +253,7 @@ class TimeSeriesContrastiveTrainer:
                     preds = self.flatten_by_trajectories(self.model(inputs), lengths)
                     corrupted_preds = self.flatten_by_trajectories(self.model(corrupted), lengths)
                     
-                    loss = self.criterion(preds, corrupted_preds, torch.eye(preds.shape[0]).to(self.device))
+                    loss = self.main_criterion(preds, corrupted_preds) #, torch.eye(preds.shape[0]).to(self.device))
                     output_idx = 1
                     if self.same_trajectory_contrast_lambda > 0:
                         loss += (self.same_trajectory_contrast_lambda * 
@@ -260,7 +288,7 @@ class TimeSeriesContrastiveTrainer:
                         preds = self.flatten_by_trajectories(self.model(inputs), lengths)
                         corrupted_preds = self.flatten_by_trajectories(self.model(corrupted), lengths)
                         
-                        total_losses[0] += self.criterion(preds, corrupted_preds, torch.eye(preds.shape[0]).to(self.device)).item()
+                        total_losses[0] += self.main_criterion(preds, corrupted_preds) #, torch.eye(preds.shape[0]).to(self.device)).item()
                         output_idx = 1
                         if self.same_trajectory_contrast_lambda > 0:
                             total_losses[output_idx] += (self.same_trajectory_contrast_lambda * 

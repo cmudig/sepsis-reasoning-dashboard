@@ -36,7 +36,7 @@ def get_nearest_neighbors(test_encoded, reference_encoded, reference_ids, kneare
     
     if neighbors is None:
         cell_index = faiss.IndexFlatIP(reference_encoded.shape[1])
-        index = faiss.IndexIVFFlat(cell_index, reference_encoded.shape[1], min(reference_encoded.shape[0] // 100, 100))
+        index = faiss.IndexIVFFlat(cell_index, reference_encoded.shape[1], min(max(min(reference_encoded.shape[0], 5), reference_encoded.shape[0] // 100), 100))
         print("Training index")
         index.train(reference_encoded)
         index.add(reference_encoded)
@@ -48,7 +48,7 @@ def get_nearest_neighbors(test_encoded, reference_encoded, reference_ids, kneare
     result_idxs = np.zeros((len(test_encoded), knearest), dtype=int)
     insufficient_neighbors = []
     
-    for i in range(len(test_encoded)):
+    for i in tqdm.tqdm(range(len(test_encoded))):
         # dists, idxs = neighbors.kneighbors(test_encoded[i:i + 1], n_neighbors=knearest * search_factor)
         dists, idxs = neighbors.search(test_encoded[i:i + 1], knearest * search_factor)
         dists = dists[0]
