@@ -22,6 +22,7 @@ class TripletContrastiveTrainer:
                  architecture='transformer', nhead=4, nhid=128, nembed=32, 
                  nencoder=2, dropout=0.1, device='cpu', lr=5e-4,
                  triplet_margin=1.0,
+                 balanced_treatment_sampling=False,
                  lr_decay=0.98, n_warmup=2, corruption_rate=0.2, mask_prob=0.0,
                  num_triplets=128,
                  neg_same_traj_prob=0.5,
@@ -61,6 +62,7 @@ class TripletContrastiveTrainer:
         self.checkpoint_path = checkpoint_path
         
         self.mask_prob = mask_prob
+        self.balanced_treatment_sampling = balanced_treatment_sampling
         self.neg_same_traj_prob = neg_same_traj_prob
         self.num_triplets = num_triplets
         
@@ -109,14 +111,25 @@ class TripletContrastiveTrainer:
         positives = []
         negatives = []
         idxs = np.arange(N)
-        sampled_idxs = np.random.choice(N, size=min(self.num_triplets, N), replace=False)
+        
+        if self.balanced_treatment_sampling:
+            # Compute treatment frequencies
+            treatment_values, treatment_counts = torch.unique(treatments, return_counts=True)
+            freq_dict = {val.item(): count.item() for val, count in zip(treatment_values, treatment_counts)}
+            # Assign sampling weights: inverse of frequency
+            sampling_weights = np.array([1.0 / freq_dict[t.item()] for t in treatments])
+            sampling_weights = sampling_weights / sampling_weights.sum()
+            sampled_idxs = np.random.choice(N, size=min(self.num_triplets, N), replace=False, p=sampling_weights)
+        else:
+            sampled_idxs = np.random.choice(N, size=min(self.num_triplets, N), replace=False)
+        
         for anchor_idx in sampled_idxs:
             anchor_traj = trajectory_indexes[anchor_idx]
             anchor_treat = treatments[anchor_idx]
 
             # Positive: same treatment, different trajectory
             pos_mask = (treatments == anchor_treat) & (trajectory_indexes != anchor_traj)
-            pos_candidates = idxs[pos_mask]
+            pos_candidates = idxs[pos_mask.cpu().numpy()]
             if len(pos_candidates) == 0:
                 continue  # skip if no positive found
             pos_idx = np.random.choice(pos_candidates)
@@ -125,11 +138,11 @@ class TripletContrastiveTrainer:
             if np.random.rand() < self.neg_same_traj_prob:
                 # Negative: same trajectory, different treatment
                 neg_mask = (trajectory_indexes == anchor_traj) & (treatments != anchor_treat)
-                neg_candidates = idxs[neg_mask]
+                neg_candidates = idxs[neg_mask.cpu().numpy()]
                 if len(neg_candidates) == 0:
                     # fallback to different trajectory and different treatment
                     neg_mask = (trajectory_indexes != anchor_traj) & (treatments != anchor_treat)
-                    neg_candidates = idxs[neg_mask]
+                    neg_candidates = idxs[neg_mask.cpu().numpy()]
             else:
                 # Negative: different trajectory, different treatment
                 neg_candidates = []
@@ -138,16 +151,16 @@ class TripletContrastiveTrainer:
                     past_treatment = treatments[anchor_idx - 1]
                     neg_mask = ((trajectory_indexes != anchor_traj) & 
                                 (timestep_numbers >= 1) & 
-                                np.concatenate([np.array([False]), treatments[:-1] == past_treatment]) & 
+                                torch.cat([torch.tensor([False]).bool().to(self.device), treatments[:-1] == past_treatment], 0) & 
                                 (treatments != anchor_treat))
-                    neg_candidates = idxs[neg_mask]
+                    neg_candidates = idxs[neg_mask.cpu().numpy()]
                 if len(neg_candidates) == 0:
                     neg_mask = (trajectory_indexes != anchor_traj) & (treatments != anchor_treat)
-                    neg_candidates = idxs[neg_mask]
+                    neg_candidates = idxs[neg_mask.cpu().numpy()]
                     if len(neg_candidates) == 0:
                         # fallback to same trajectory, different treatment
                         neg_mask = (trajectory_indexes == anchor_traj) & (treatments != anchor_treat)
-                        neg_candidates = idxs[neg_mask]
+                        neg_candidates = idxs[neg_mask.cpu().numpy()]
             if len(neg_candidates) == 0:
                 continue  # skip if no negative found
             neg_idx = np.random.choice(neg_candidates)
