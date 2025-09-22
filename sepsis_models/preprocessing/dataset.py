@@ -76,7 +76,8 @@ class TemporalDataset(torch.utils.data.Dataset):
                  mask_prob=0.0,
                  noise_factor=0.0,
                  replacement_values=0.0,
-                 weights=None):
+                 weights=None,
+                 treatments=None):
         """
         stay_ids, observations, and outputs should all be the same length.
         mask_prob = probability of zeroing any value when returned.
@@ -90,6 +91,7 @@ class TemporalDataset(torch.utils.data.Dataset):
         assert len(stay_ids) == len(observations)
         self.observations = observations
         self.outputs = outputs
+        self.treatments = treatments
         self.stay_ids = stay_ids
         self.weights = weights
         
@@ -144,9 +146,15 @@ class TemporalDataset(torch.utils.data.Dataset):
             should_mask = np.random.uniform(0.0, 1.0, size=input_obs.shape) < self.mask_prob
             input_obs = np.where(should_mask, self.replacement_values, input_obs)
                
+        if self.treatments is not None:
+            treatments = self.treatments[trajectory_indexes]
+        else:
+            treatments = None
+            
         return (
             torch.from_numpy(input_obs).float(), 
             torch.from_numpy(outputs).float(),
-            torch.from_numpy(weights).float()
+            torch.from_numpy(weights).float(),
+            *([torch.from_numpy(treatments).long()] if treatments is not None else [])
         )
 
