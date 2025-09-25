@@ -5,6 +5,7 @@ const urlParams = new URLSearchParams(window.location.search);
 let patientID = urlParams.get('id');
 let dataset = urlParams.get('dataset');
 let interfaceType = urlParams.get('interface');
+let parentURL = urlParams.get('parent') ?? null;
 let timestep: number | string | null = urlParams.get('ts');
 if (!!timestep) {
   try {
@@ -22,6 +23,7 @@ const app = new EmbeddableADS({
     initDataset: dataset,
     initInterfaceType: interfaceType,
     initTimestepIndex: timestep,
+    parentURL,
   },
 });
 

@@ -1,5 +1,5 @@
 import numpy as np
-from utils import make_forward_neighbors, TREATMENT_INFO
+from .utils import make_forward_neighbors, TREATMENT_INFO
 import scipy
 from statsmodels.stats.proportion import proportions_ztest
 import itertools
@@ -9,7 +9,7 @@ class PredictiveActionIndependentInformation:
     Generates information about the likelihood of an outcome based on the nearest
     neighbors.
     """
-    def __init__(self, train_outcome, train_severity_quantiles, severity_cutoffs):
+    def __init__(self, train_outcome, train_severity_quantiles, severity_cutoffs=None):
         self.train_outcome = train_outcome
         self.train_severity_quantiles = train_severity_quantiles
         self.severity_cutoffs = severity_cutoffs
@@ -69,7 +69,7 @@ class PredictiveActionIndependentInformation:
             **({"severity_range": {
                 "min": int(self.severity_cutoffs[severity_quantile]),
                 "max": int(self.severity_cutoffs[severity_quantile + 1])
-            }} if severity_quantile is not None else {}),
+            }} if severity_quantile is not None and self.severity_cutoffs is not None else {}),
         }
         
 class PredictiveActionDependentInformation:

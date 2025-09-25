@@ -18,6 +18,9 @@
   } from '@fortawesome/free-solid-svg-icons';
   import Fa from 'svelte-fa';
   import DescriptivePane from './lib/rst/DescriptivePane.svelte';
+  import TreatmentRecommendationPane from './lib/new_rst/TreatmentRecommendationPane.svelte';
+  import OutcomeOptionsPane from './lib/new_rst/OutcomeOptionsPane.svelte';
+  import PeerOptionsPane from './lib/new_rst/PeerOptionsPane.svelte';
 
   let datasets: string[] = [];
   let currentDataset: string | null = null;
@@ -45,6 +48,8 @@
 
   enum Panes {
     all = 'All',
+
+    // study 1 - think aloud
     descriptive = 'Descriptive',
     predictive_short_independent = 'Predictive Short-Term Independent',
     predictive_long_independent = 'Predictive Long-Term Independent',
@@ -52,8 +57,32 @@
     predictive_long_dependent = 'Predictive Long-Term Dependent',
     prescriptive_peer = 'Prescriptive Peer',
     prescriptive_outcome = 'Prescriptive Outcome',
+
+    // study 2 - survey
+    recommendation = 'Treatment Recommendation',
+    outcome_options = 'Options by Outcome',
+    peer_options = 'Options by Peer Frequency',
   }
-  let visiblePane: Panes = Panes.descriptive;
+  let study1: boolean = false;
+  let paneOptions: Panes[] = [];
+  $: if (study1) {
+    paneOptions = [
+      Panes.descriptive,
+      Panes.predictive_short_independent,
+      Panes.predictive_short_dependent,
+      Panes.predictive_long_independent,
+      Panes.predictive_long_dependent,
+      Panes.prescriptive_peer,
+      Panes.prescriptive_outcome,
+    ];
+  } else {
+    paneOptions = [
+      Panes.recommendation,
+      Panes.outcome_options,
+      Panes.peer_options,
+    ];
+  }
+  let visiblePane: Panes = Panes.all;
 
   function setPatientData(data: {
     id: string;
@@ -110,7 +139,8 @@
 
   onMount(async () => {
     datasets = await (await fetch('/dataset')).json();
-    currentDataset = initDataset ?? datasets[0];
+    currentDataset =
+      initDataset ?? (datasets.includes('weighted') ? 'weighted' : datasets[0]);
     initDataset = null;
   });
 
@@ -141,6 +171,22 @@
     <div class="text-white font-bold shrink truncate">Sepsis AI</div>
     <div class="flex-auto" />
 
+    <select class="flat-select-dark" bind:value={currentDataset}>
+      {#each datasets as dataset}
+        <option value={dataset}>{dataset}</option>
+      {/each}
+    </select>
+    <button
+      class="btn btn-dark-slate"
+      disabled={loadingPatient}
+      on:click={() => (study1 = !study1)}
+      >{study1 ? 'Study 1' : 'Study 2'}</button
+    >
+    <button
+      class="btn btn-dark-slate"
+      disabled={loadingPatient}
+      on:click={randomPatient}>Random Patient</button
+    >
     <form
       action="#"
       class="flex items-center gap-2 w-96 max-w-1/2"
@@ -163,16 +209,6 @@
         >
       {/if}
     </form>
-    <button
-      class="btn btn-dark-slate"
-      disabled={loadingPatient}
-      on:click={randomPatient}>Random Patient</button
-    >
-    <select class="flat-select-dark" bind:value={currentDataset}>
-      {#each datasets as dataset}
-        <option value={dataset}>{dataset}</option>
-      {/each}
-    </select>
     <button
       class="px-2 font-bold text-white hover:opacity-50"
       on:click={copyLink}
@@ -255,65 +291,94 @@
     <div class="border-l border-slate-400 p-4 h-full w-1/2 overflow-y-auto">
       <div class="pb-4 flex items-center">
         <select class="flat-select" bind:value={visiblePane}>
-          {#each Object.values(Panes) as paneValue}
+          <option value={Panes.all}>{Panes.all}</option>
+          {#each paneOptions as paneValue}
             <option value={paneValue}>{paneValue}</option>
           {/each}
         </select>
       </div>
-      {#if visiblePane == Panes.all || visiblePane == Panes.descriptive}
-        <div class="mb-4">
-          <DescriptivePane collapsible={visiblePane == Panes.all} />
-        </div>
-      {/if}
-      {#if visiblePane == Panes.all || visiblePane == Panes.predictive_short_independent}
-        <div class="mb-4">
-          <PredictiveIndependentPane
-            shortName="vaso"
-            longName="Vasopressor Requirement"
-            outcomeDescription="require vasopressors after 12 hours"
-            collapsible={visiblePane == Panes.all}
-          />
-        </div>
-      {/if}
-      {#if visiblePane == Panes.all || visiblePane == Panes.predictive_long_independent}
-        <div class="mb-4">
-          <PredictiveIndependentPane
-            shortName="morta"
-            longName="Mortality"
-            outcomeDescription="have a final discharge outcome of mortality"
-            collapsible={visiblePane == Panes.all}
-          />
-        </div>
-      {/if}
-      {#if visiblePane == Panes.all || visiblePane == Panes.predictive_short_dependent}
-        <div class="mb-4">
-          <PredictionDependentPane
-            shortName="vaso"
-            longName="Vasopressor Requirement"
-            outcomeDescription="require vasopressors after 12 hours"
-            collapsible={visiblePane == Panes.all}
-          />
-        </div>
-      {/if}
-      {#if visiblePane == Panes.all || visiblePane == Panes.predictive_long_dependent}
-        <div class="mb-4">
-          <PredictionDependentPane
-            shortName="morta"
-            longName="Mortality"
-            outcomeDescription="have a final discharge outcome of mortality"
-            collapsible={visiblePane == Panes.all}
-          />
-        </div>
-      {/if}
-      {#if visiblePane == Panes.all || visiblePane == Panes.prescriptive_peer}
-        <div class="mb-4">
-          <PrescriptivePeerPane collapsible={visiblePane == Panes.all} />
-        </div>
-      {/if}
-      {#if visiblePane == Panes.all || visiblePane == Panes.prescriptive_outcome}
-        <div class="mb-4">
-          <AiClinicianPane collapsible={visiblePane == Panes.all} />
-        </div>
+      {#if study1}
+        {#if visiblePane == Panes.all || visiblePane == Panes.descriptive}
+          <div class="mb-4">
+            <DescriptivePane collapsible={visiblePane == Panes.all} />
+          </div>
+        {/if}
+        {#if visiblePane == Panes.all || visiblePane == Panes.predictive_short_independent}
+          <div class="mb-4">
+            <PredictiveIndependentPane
+              shortName="vaso"
+              longName="Vasopressor Requirement"
+              outcomeDescription="require vasopressors after 12 hours"
+              collapsible={visiblePane == Panes.all}
+            />
+          </div>
+        {/if}
+        {#if visiblePane == Panes.all || visiblePane == Panes.predictive_long_independent}
+          <div class="mb-4">
+            <PredictiveIndependentPane
+              shortName="morta"
+              longName="Mortality"
+              outcomeDescription="have a final discharge outcome of mortality"
+              collapsible={visiblePane == Panes.all}
+            />
+          </div>
+        {/if}
+        {#if visiblePane == Panes.all || visiblePane == Panes.predictive_short_dependent}
+          <div class="mb-4">
+            <PredictionDependentPane
+              shortName="vaso"
+              longName="Vasopressor Requirement"
+              outcomeDescription="require vasopressors after 12 hours"
+              collapsible={visiblePane == Panes.all}
+            />
+          </div>
+        {/if}
+        {#if visiblePane == Panes.all || visiblePane == Panes.predictive_long_dependent}
+          <div class="mb-4">
+            <PredictionDependentPane
+              shortName="morta"
+              longName="Mortality"
+              outcomeDescription="have a final discharge outcome of mortality"
+              collapsible={visiblePane == Panes.all}
+            />
+          </div>
+        {/if}
+        {#if visiblePane == Panes.all || visiblePane == Panes.prescriptive_peer}
+          <div class="mb-4">
+            <PrescriptivePeerPane collapsible={visiblePane == Panes.all} />
+          </div>
+        {/if}
+        {#if visiblePane == Panes.all || visiblePane == Panes.prescriptive_outcome}
+          <div class="mb-4">
+            <AiClinicianPane collapsible={visiblePane == Panes.all} />
+          </div>
+        {/if}
+      {:else}
+        {#if visiblePane == Panes.all || visiblePane == Panes.recommendation}
+          <div class="mb-4">
+            <TreatmentRecommendationPane
+              collapsible={visiblePane == Panes.all}
+            />
+          </div>
+        {/if}
+        {#if visiblePane == Panes.all || visiblePane == Panes.outcome_options}
+          <div class="mb-4">
+            <OutcomeOptionsPane
+              collapsible={visiblePane == Panes.all}
+              shortName="morta"
+              longName="Mortality"
+              outcomeDescription="have a final discharge outcome of mortality"
+            />
+          </div>
+        {/if}
+        {#if visiblePane == Panes.all || visiblePane == Panes.peer_options}
+          <div class="mb-4">
+            <PeerOptionsPane
+              collapsible={visiblePane == Panes.all}
+              shortName="morta"
+            />
+          </div>
+        {/if}
       {/if}
     </div>
     {#if loadingPatient}

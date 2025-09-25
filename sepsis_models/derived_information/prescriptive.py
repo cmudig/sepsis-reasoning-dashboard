@@ -1,6 +1,6 @@
 import numpy as np
 import itertools
-from utils import TREATMENT_INFO, make_forward_neighbors
+from .utils import TREATMENT_INFO, make_forward_neighbors
 
 class PrescriptivePeerInformation:
     def __init__(self, train_treatments, severity_cutoffs=None, min_consistent_probability=0.6):
