@@ -84,7 +84,7 @@ class PredictiveActionDependentInformation:
         self.train_treatments = train_treatments
         self.severity_cutoffs = severity_cutoffs
 
-    def get_prediction(self, neighbor_idxs, severity_quantile=None, true_outcome=None, last_treatment=None):
+    def get_prediction(self, neighbor_idxs, severity_quantile=None, true_outcome=None, last_treatment=None, min_frequency=0.1):
         # first get the indices of the next timestep in each nearest neighbor's trajectory
         neighbor_next_steps, neighbor_mask = make_forward_neighbors(neighbor_idxs.reshape(1, -1), 
                                                                     self.train_ids, 
@@ -99,7 +99,7 @@ class PredictiveActionDependentInformation:
                 {"tx": TREATMENT_INFO[i]["name"], "value": TREATMENT_INFO[i]["short_names"][policy[i]]}
                 for i in range(len(policy))
             ]} if policy is not None else {}
-            if len(matching_idxs) / len(neighbor_idxs) < 0.1:
+            if len(matching_idxs) / len(neighbor_idxs) <= min_frequency:
                 return
             result["sample_size"] = len(matching_idxs)
             outcome_scores = np.take(self.train_outcome, matching_idxs)

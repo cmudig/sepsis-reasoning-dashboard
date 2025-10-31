@@ -23,10 +23,11 @@ BUCKET_DIRECTORIES = [
     "predictive_morta_independent",
     "predictive_morta_dependent",
     "prescriptive_peer",
-    "prescriptive_outcome"
+    "prescriptive_outcome",
+    "uncommon_actions"
 ]
 
-OPEN_DATASETS = ["weighted"] # temporary: change this to the study-specific datasets
+OPEN_DATASETS = ["weighted", "250928"] # temporary: change this to the study-specific datasets
 
 # Initialize GCS client
 storage_client = storage.Client()

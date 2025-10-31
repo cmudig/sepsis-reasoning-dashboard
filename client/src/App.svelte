@@ -21,6 +21,7 @@
   import TreatmentRecommendationPane from './lib/new_rst/TreatmentRecommendationPane.svelte';
   import OutcomeOptionsPane from './lib/new_rst/OutcomeOptionsPane.svelte';
   import PeerOptionsPane from './lib/new_rst/PeerOptionsPane.svelte';
+  import UncommonActionsPane from './lib/new_rst/UncommonActionsPane.svelte';
 
   let datasets: string[] = [];
   let currentDataset: string | null = null;
@@ -62,6 +63,9 @@
     recommendation = 'Treatment Recommendation',
     outcome_options = 'Options by Outcome',
     peer_options = 'Options by Peer Frequency',
+    uncommon_actions = 'Uncommon Actions',
+    best_options = 'Best Options',
+    worst_options = 'Worst Options',
   }
   let study1: boolean = false;
   let paneOptions: Panes[] = [];
@@ -80,6 +84,9 @@
       Panes.recommendation,
       Panes.outcome_options,
       Panes.peer_options,
+      Panes.uncommon_actions,
+      Panes.best_options,
+      Panes.worst_options,
     ];
   }
   let visiblePane: Panes = Panes.all;
@@ -365,9 +372,10 @@
           <div class="mb-4">
             <OutcomeOptionsPane
               collapsible={visiblePane == Panes.all}
+              minimumSampleSize={10}
               shortName="morta"
               longName="Mortality"
-              outcomeDescription="have a final discharge outcome of mortality"
+              outcomeDescription="have a discharge outcome of mortality"
             />
           </div>
         {/if}
@@ -376,6 +384,36 @@
             <PeerOptionsPane
               collapsible={visiblePane == Panes.all}
               shortName="morta"
+            />
+          </div>
+        {/if}
+        {#if visiblePane == Panes.all || visiblePane == Panes.uncommon_actions}
+          <div class="mb-4">
+            <UncommonActionsPane collapsible={visiblePane == Panes.all} />
+          </div>
+        {/if}
+        {#if visiblePane == Panes.all || visiblePane == Panes.best_options}
+          <div class="mb-4">
+            <OutcomeOptionsPane
+              collapsible={visiblePane == Panes.all}
+              rankOptions="best"
+              shortName="morta"
+              longName="Mortality"
+              outcomeDescription="have a discharge outcome of mortality"
+              balanceFiltering
+            />
+          </div>
+        {/if}
+        {#if visiblePane == Panes.all || visiblePane == Panes.worst_options}
+          <div class="mb-4">
+            <OutcomeOptionsPane
+              collapsible={visiblePane == Panes.all}
+              warningStyle
+              rankOptions="worst"
+              shortName="morta"
+              longName="Mortality"
+              outcomeDescription="have a discharge outcome of mortality"
+              balanceFiltering
             />
           </div>
         {/if}

@@ -8,6 +8,7 @@
     faChevronDown,
     faChevronRight,
     faChevronUp,
+    faWarning,
   } from '@fortawesome/free-solid-svg-icons';
   import * as d3 from 'd3';
   import CategoryBar from '../charts/CategoryBar.svelte';
@@ -22,20 +23,19 @@
   export let collapsed: boolean = collapsible;
   $: if (!collapsible) collapsed = false;
 
-  type OutcomePrediction = {
-    policy?: { tx: string; value: string }[];
-    sample_size: number;
-    prediction: {
-      mean: number;
-      std: number;
-      pvalue?: number;
-    };
+  type ActionPrediction = {
+    short_name: string;
+    long_name: string;
+    treatment_indexes: (number[] | null)[];
+    count: number;
+    prob: number;
   };
-  type TreatmentOutcomePrediction = {
-    average: OutcomePrediction;
-    treatment_names: string[][];
-    predictions: OutcomePrediction[];
-    ground_truth?: string;
+  type UncommonActionPrediction = {
+    uncommon_actions: ActionPrediction[];
+    ground_truth?: {
+      tx: string;
+      label: string;
+    }[];
     severity_range: {
       min: number;
       max: number;
@@ -58,24 +58,17 @@
 
   // let visibleTarget: string = 'Mortality';
 
-  let prediction: TreatmentOutcomePrediction | undefined;
-  let sortedPredictions: OutcomePrediction[] | undefined;
-  $: if (
-    !!$patientData &&
-    !!shortName &&
-    !!$patientData[`predictive_${shortName}_dependent`]
-  ) {
-    prediction =
-      $patientData[`predictive_${shortName}_dependent`].timesteps![
-        $timestepIndex
-      ].data;
+  let prediction: UncommonActionPrediction | undefined;
+  $: if (!!$patientData && !!$patientData.uncommon_actions) {
+    prediction = $patientData.uncommon_actions.timesteps![$timestepIndex].data;
   } else {
     prediction = undefined;
   }
 
+  let sortedPredictions: ActionPrediction[] | undefined;
   $: if (!!prediction) {
-    sortedPredictions = [...prediction.predictions];
-    sortedPredictions.sort((a, b) => b.sample_size - a.sample_size);
+    sortedPredictions = [...prediction.uncommon_actions];
+    sortedPredictions.sort((a, b) => a.count - b.count);
     if (sortedPredictions.length > 3)
       sortedPredictions = sortedPredictions.slice(0, 3);
   } else {
@@ -84,37 +77,16 @@
 
   const probabilityFormat = d3.format('.0~%');
 
-  // https://pmc.ncbi.nlm.nih.gov/articles/PMC11067312/
-  function frequencyDescription(frequency: number): string {
-    frequency = frequency / 100;
-    if (frequency <= 0.05) return 'almost never';
-    else if (frequency <= 0.15) return 'rarely';
-    else if (frequency <= 0.3) return 'infrequently';
-    else if (frequency <= 0.6) return 'often';
-    else if (frequency <= 0.8) return 'frequently';
-    else if (frequency <= 0.99) return 'very frequently';
-    else return 'almost always';
-  }
-
   const replacePhrases: { [key: string]: string } = {
     '100 mL to 1 L': 'up to 1 L',
     '< 100 mL of': 'no',
   };
 
-  function getPolicyLabel(
-    policyType: 'Volume' | 'Vasopressors',
-    policyValue: string
-  ) {
-    let idx = TreatmentPolicyNames[policyType].indexOf(policyValue);
-    let result: string = policyValue;
-    if (idx >= 0)
-      result =
-        prediction?.treatment_names[policyType == 'Volume' ? 0 : 1][idx] ??
-        policyValue;
+  function getActionLabel(actionName: string) {
     Object.entries(replacePhrases).forEach(
-      ([pat, repl]) => (result = result.replaceAll(pat, repl))
+      ([pat, repl]) => (actionName = actionName.replaceAll(pat, repl))
     );
-    return result;
+    return actionName;
   }
 
   let visible = false;
@@ -147,46 +119,27 @@
       {#if !collapsed}
         {#if visible}
           <div class="mt-2 measure" in:fade>
-            Sepsis AI identified the following viable treatment plans for this
-            patient over the next four hours:
+            Sepsis AI found that the following treatment plans were rarely
+            chosen by providers for similar patients and may be less suitable
+            for this patient:
           </div>
         {/if}
         <div class="mt-4 space-y-2">
           {#each sortedPredictions as pred, i (i)}
             {#if visible}
               <div
-                class="rounded-md bg-gray-100 border-2 border-gray-300 p-4 w-full flex flex-wrap justify-stretch gap-4"
+                class="rounded-md bg-orange-100 border-2 border-orange-300 p-4 w-full flex justify-stretch items-center gap-4"
                 in:fade={{ delay: i * 200 }}
               >
-                <div class="flex-auto w-0" style="min-width: 180px;">
-                  <strong
-                    >{getPolicyLabel(
-                      'Volume',
-                      pred.policy?.[0].value ?? 'unknown'
-                    )}</strong
-                  >
-                  and
-                  <strong
-                    >{getPolicyLabel(
-                      'Vasopressors',
-                      pred.policy?.[1].value ?? 'unknown'
-                    )}</strong
-                  >
+                <div class="text-orange-400/50 text-xl">
+                  <Fa icon={faWarning} />
                 </div>
-                <div class="flex-auto w-0" style="min-width: 180px;">
+                <div class="flex-auto w-0">
                   <div class="mb-1">
-                    <span
-                      class="font-bold {pred.sample_size > 30
-                        ? 'text-blue-600'
-                        : pred.sample_size >= 15
-                          ? 'text-purple-600'
-                          : 'text-rose-600'}"
-                      >{frequencyDescription(pred.sample_size)}</span
-                    >
-                    prescribed for similar patients
+                    <strong>{getActionLabel(pred.long_name)}</strong>
                   </div>
-                  <div class="text-sm text-gray-600">
-                    {pred.sample_size}/100 similar patients
+                  <div class="text-sm text-orange-700">
+                    {pred.count}/100 similar patients
                   </div>
                 </div>
               </div>
@@ -194,9 +147,12 @@
           {/each}
         </div>
         {#if showGroundTruth && !!prediction.ground_truth}
-          <div class="mt-4 text-sm text-blue-700">
-            Ground truth: <strong>{prediction.ground_truth}</strong>
-          </div>
+          <div class="mt-4 text-sm text-blue-700">Ground truth:</div>
+          {#each prediction.ground_truth as gt (gt.tx)}
+            <div class="mt-2 text-sm">
+              <span class="font-bold">{gt.tx}</span>: {gt.label}
+            </div>
+          {/each}
         {/if}
         {#if visible}
           <div class="mt-4 text-sm measure" in:fade>
