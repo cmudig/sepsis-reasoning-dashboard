@@ -1,0 +1,105 @@
+{
+  "text": {
+    "intro_text": "In this study, we're interested in understanding how physicians reason about treating patients with sepsis. You'll imagine you are working an ICU shift, and you are reviewing information about patients currently in the ICU before discussing them in morning rounds. **Your task will be to recommend a treatment plan for this patient to be carried out over the next four hours.** Please talk aloud as you interpret the clinical data, reason about it, and come up with your recommendation.",
+    "post_patient_items": [
+      {
+        "question": "How mentally demanding was this case?",
+        "answer_instruction": "Answer on a scale from 1-10, with 1 being not at all demanding and 10 being extremely demanding."
+      },
+      {
+        "question": "How confident are you in your treatment decision?",
+        "answer_instruction": "Answer on a scale from 1-10, with 1 being not at all confident and 10 being extremely confident."
+      },
+      {
+        "question": "How useful was the information provided by Sepsis AI for this case?",
+        "answer_instruction": "Answer on a scale from 1-10, with 1 being not at all useful and 10 being extremely useful.",
+        "ads_only": true
+      }
+    ],
+    "prompt_text": "With regards to hemodynamic management, **what is your plan over the next four hours**?"
+  },
+  "participant_ids": [
+    "p1",
+    "p2",
+    "p3",
+    "p4",
+    "p5",
+    "p6",
+    "p7",
+    "p8",
+    "p9",
+    "p10",
+    "p11",
+    "p12",
+    "p13",
+    "p14",
+    "p15",
+    "p16",
+    "p17",
+    "p18",
+    "p19",
+    "p20",
+    "p21",
+    "p22",
+    "p23",
+    "p24",
+    "p25",
+    "p26",
+    "p27",
+    "p28",
+    "p29"
+  ],
+  "patients": [
+    {
+      "id": 33097931,
+      "dataset": "weighted",
+      "ts": 1,
+      "ads_ids": [
+        "descriptive",
+        "predictive_vaso_independent",
+        "predictive_vaso_dependent",
+        "predictive_morta_independent",
+        "prescriptive_outcome"
+      ],
+      "pseudonym": "Heather Thompson",
+      "vignette": "Ms. Thompson is a 53 year old woman with Hepatitis C and cirrhosis is admitted to the ICU for treatment of sepsis with an unknown source. She resides in a skilled nursing facility and has an indwelling PICC line, placed a few weeks ago, to facilitate IV access. She has a history of bleeding esophageal varices and mild hepatic encephalopathy.\n\n**You are evaluating her on the morning after admission.** Cultures of her blood, urine, and ascitic fluid are pending. Her ascitic fluid was not suggestive of spontaneous bacterial peritonitis. She is receiving appropriate broad spectrum antibiotics. There is no clinical evidence of bleeding. Her chest x-ray shows mild interstitial edema but no infiltrate. A renal ultrasound was normal. On exam she is drowsy but arousable, and mildly dyspneic.\n\nThe nurse gives you the following information:\n- HR: 56 beats/minute\n- Heart rhythm: sinus bradycardia\n- RR: 17 breaths/minute\n- SaO2: 100% on 2L of oxygen by nasal cannula\n- BP: 89/53\n- MAP: 58\n- Serum bicarbonate: 20\n- Serum creatine: 3.4\n- Serum lactate: 2.1\n\nIn the last four hours she has received 1.6 L of crystalloid. She is net positive 2.4 L since admission. She has made no urine since admission."
+    },
+    {
+      "id": 36443311,
+      "dataset": "weighted",
+      "ts": 1,
+      "ads_ids": [
+        "descriptive",
+        "predictive_vaso_dependent",
+        "predictive_morta_dependent"
+      ],
+      "pseudonym": "Deborah Walker",
+      "vignette": "Ms. Walker is a 64 year old woman with diabetes, hypertension, hyperlipidemia, and atrial fibrillation on warfarin is admitted to the ICU for treatment of sepsis and acute hypoxemic respiratory failure due to pneumonia. In the emergency department she was intubated and started on an IV norepinephrine drip. \n\n**You are evaluating her the morning after admission.** Cultures of her blood, urine, and sputum are pending. She is receiving appropriate broad spectrum antibiotics. Her chest x-ray shows diffuse bilateral airspace opacities with a lower zone predominance. An echocardiogram shows a normal ejection fraction without significant valvular disease. On exam she is intubated and sedated with bilateral crackles in her lung fields.\n\nThe nurse gives you the following information:\n- HR: 48 beats/minute\n- Heart rhythm: atrial fibrillation\n- RR: 15 breaths/minute (set rate = 14)\n- SaO2: 98% on 40% FiO2 and 5 of PEEP\n- Norepinephrine dose: 0.16 mcg/kg/min\n- Blood pressure: 80/45\n- MAP: 57\n- ABG: 7.48/35/84\n- Serum bicarbonate: 24\n- Serum creatine: 0.8\n- Serum lactate: 1.9\n\nIn the last four hours she has received about 0.5 L of fluids. Her urine output is approximately 100 mL per hour, and she is net negative about 0.5 L since admission."
+    },
+    {
+      "id": 33742242,
+      "dataset": "weighted",
+      "ts": 12,
+      "ads_ids": [
+        "descriptive",
+        "predictive_morta_dependent",
+        "prescriptive_peer",
+        "prescriptive_outcome"
+      ],
+      "pseudonym": "Richard Sullivan",
+      "vignette": "Mr. Sullivan is a 71 year old man with a history of heart failure with preserved ejection fraction, chronic renal insufficiency, coronary artery disease and diabetes is admitted to the ICU for treatment of sepsis due to acute cholecystitis. On admission he underwent percutaneous cholecystostomy with placement of a drainage tube. Following tube placement he experienced worsening respiratory failure requiring intubation, as well as worsening shock requiring intravenous norepinephrine and vasopressin.\n\n**You are evaluating him on day two of ICU admission.** His blood cultures are growing gram negative rods, and he is being treated with appropriate antibiotics. There is no evident source of infection other than cholecystitis. He is sedated with propofol but follows commands when asked. On exam he has mild peripheral edema.\n\nThe nurse gives you the following information:\n- HR: 76 beats/minute\n- Heart rhythm: sinus\n- RR: 20 breaths/minute (set rate = 20)\n- SaO2: 97% on 50% FiO2 and 15 of PEEP\n- Plateau airway pressure on 6cc/kg/IBW = 26\n- Norepinephrine dose: 0.04 mcg/kg/min\n- Vasopressin dose: 0.04 units/min\n- MAP: 68\n- ABG: 7.43/40/103\n- Serum bicarbonate: 26\n- Serum creatine: 1.5\n- Serum lactate: pending (two days ago it was 3.9)\n\nOver the last four hours he has received 1.4 L of crystalloid. In the last 24 hours he has received 3 L of crystalloid. Concurrently, his PEEP has been increased from 10 to 15 in response to intermittent desaturations. His urine output is consistent at 40 ml/hr."
+    },
+    {
+      "dataset": "weighted",
+      "id": 32581623,
+      "ts": 4,
+      "ads_ids": [
+        "predictive_vaso_independent",
+        "predictive_morta_independent",
+        "prescriptive_peer"
+      ],
+      "pseudonym": "Esther Goldberg",
+      "vignette": "Ms. Goldberg is an 87 year old woman with a history of hypertension and hypercholesterolemia is admitted to the ICU for treatment of sepsis due to pneumonia complicated by new-onset atrial fibrillation. A CT angiogram of her chest confirmed her pneumonia and showed no evidence pulmonary embolism. An EKG showed no evidence of ischemia and a cardiac troponin was normal. An echocardiogram showed normal systolic function.\n\n**You are evaluating her the morning after her admission.** Blood cultures are pending, and she is being treated with appropriate antibiotics. Her chest x-ray shows diffuse bilateral infiltrates that have worsened since admission. She is receiving 100% oxygen by non-rebreather and is mildly dyspneic appearing. \n\nThe nurse gives you the following information:\n- HR: 107 beats/minute\n- Heart rhythm: atrial fibrillation\n- RR: 20 breaths/minute\n- SaO2: 95% on 100% non-rebreather mask\n- BP: 88/58\n- MAP: 58\n- Serum creatine: 0.6\n- Serum lactate: 0.8\n\nCurrently she is not receiving any intravenous fluids. Her urine output is consistent 40 mL/hr, and she is net negative 1.2 L since admission."
+    }
+  ]
+}
