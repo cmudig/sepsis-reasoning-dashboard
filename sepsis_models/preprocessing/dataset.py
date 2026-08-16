@@ -76,6 +76,8 @@ class TemporalDataset(torch.utils.data.Dataset):
                  mask_prob=0.0,
                  noise_factor=0.0,
                  replacement_values=0.0,
+                 zero_column_indexes=None,
+                 permute_column_indexes=None,
                  weights=None,
                  treatments=None):
         """
@@ -87,6 +89,10 @@ class TemporalDataset(torch.utils.data.Dataset):
             according to the bin cutoffs and then assigned from the weights array. The bin_cutoffs
             are assumed to have one LESS value than weights, so that the smallest bin cutoff is
             left-open and the largest bin cutoff is right-open.
+        zero_column_indexes: If not None, a list of column indexes in observations
+            that should be set to zero.
+        permute_column_indexes: If not None, a list of column indexes in observations
+            that should be permuted by row according to the permutation property.
         """
         assert len(stay_ids) == len(observations)
         self.observations = observations
@@ -109,10 +115,21 @@ class TemporalDataset(torch.utils.data.Dataset):
         self.noise_factor = noise_factor
         self.mask_prob = mask_prob
         self.replacement_values = replacement_values
+        self.zero_column_indexes = zero_column_indexes
+        self.permute_column_indexes = permute_column_indexes
+        self.permutation = None
    
     def __len__(self):
         return len(self.stay_id_pos)
+    
+    def compute_permutation(self):
+        self.permutation = np.random.permutation(np.arange(len(self.observations)))
+        self._permuted_obs = self.observations[self.permutation]
             
+    def reset_permutation(self):
+        self.permutation = None
+        self._permuted_obs = None
+        
     def __getitem__(self, index):
         """
         Returns:
@@ -145,6 +162,11 @@ class TemporalDataset(torch.utils.data.Dataset):
             # Randomly replace observation values with the median
             should_mask = np.random.uniform(0.0, 1.0, size=input_obs.shape) < self.mask_prob
             input_obs = np.where(should_mask, self.replacement_values, input_obs)
+        if self.zero_column_indexes is not None:
+            input_obs[:,self.zero_column_indexes] = self.replacement_values[self.zero_column_indexes]
+        if self.permute_column_indexes is not None:
+            assert self._permuted_obs is not None, "Cannot permute without .permutation being set to a list of indexes matching the length of observations"
+            input_obs[:,self.permute_column_indexes] = self._permuted_obs[trajectory_indexes][:,self.permute_column_indexes]
                
         if self.treatments is not None:
             treatments = self.treatments[trajectory_indexes]
