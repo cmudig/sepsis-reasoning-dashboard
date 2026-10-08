@@ -113,13 +113,14 @@ class PrescriptiveOutcomeInformation:
             idx_mask = np.logical_and(~neighbor_mask, treatment_mask)
             tx_outcome = mean_outcome(neighbor_idxs[idx_mask],
                                       neighbor_next_steps[idx_mask])
-            if tx_outcome:
+            if tx_outcome is not None:
                 all_predictions[treatment_policy] = (tx_outcome, idx_mask.sum())
-        
+       
         if not all_predictions:
             return None
         
-        best_policy = sorted(all_predictions, key=all_predictions.get)[0]
+        # Choose the policy with the lowest mortality or the most common
+        best_policy = sorted(all_predictions, key=lambda x: (all_predictions[x][0], 100 - all_predictions[x][1]))[0]
         
         return {
             "recommendation": [{
