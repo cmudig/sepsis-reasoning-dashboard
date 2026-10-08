@@ -1,6 +1,6 @@
-# Sepsis Reasoning Cue Dashboard
+# Sepsis Reasoning Cues - Model Development and Interface Design
 
-This repository demonstrates the model training, patient selection, and dashboard design for the CHI'26 paper "Intelligent Reasoning Cues: A Framework and Case Study of the Roles of AI Information in Complex Decisions".
+This repository demonstrates the model training, patient selection, and dashboard design for the CHI'26 paper "Intelligent Reasoning Cues: A Framework and Case Study of the Roles of AI Information in Complex Decisions", and the subsequent survey study of clinical decision-making using different types of AI advice.
 
 ![Screenshot of the reasoning cue dashboard, with a callout for the patient vignettes.](/assets/study-interface.png)
 
@@ -21,10 +21,14 @@ Run `python -m server` to start the Flask server.
 
 ## Model Training and Upload
 
-The `sepsis_models` directory shows how the autoencoder was trained to produce the reasoning cues in our study. See the `load_reasoning_cues.ipynb` notebook for the full source code. (Please note that this script requires a custom preprocessed version of MIMIC-IV to work; please contact [the authors](mailto:venkats@cmu.edu) if you would like to run this code as-is.)
+The `sepsis_models` directory shows how the autoencoder was trained to produce the reasoning cues in our study. See the `load_reasoning_cues.ipynb` notebook for the full source code. (Please note that this script requires a custom preprocessed version of MIMIC-IV to work; please contact [the authors](mailto:venkatesh.sivaraman.98@gmail.com) if you would like to run this code as-is.)
 
 ## Setting Up Study Protocol
 
 Upload the study protocol JSON to the GCS bucket in a file named `study_protocol.json`. The study protocol used in our work is at the top level of this repository.
 
 Participant accounts can be set up locally by running `python blueprints/users.py`.
+
+## Retrospective Evaluation
+
+A retrospective evaluation of the model's recommendation quality using weighted importance sampling (WIS) is provided in `sepsis_models/evaluate_recommendations.ipynb`.
